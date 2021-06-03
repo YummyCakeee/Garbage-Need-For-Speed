@@ -1,8 +1,8 @@
-#version 330 core
+#version 450 core
 
 #define NR_POINT_LIGHTS 8
 #define NR_SPOT_LIGHTS 8
-#define NR_DIR_LIGHTS 4
+#define NR_DIR_LIGHTS 2
 
 struct Material
 {
@@ -61,12 +61,12 @@ struct SpotLight
 	float quadratic;
 };
 
-//layout (std140) uniform Lights
-//{
-//	DirLight dirLights[NR_DIR_LIGHTS];
-//	PointLight pointLights[NR_POINT_LIGHTS];
-//	SpotLight spotLights[NR_SPOT_LIGHTS];
-//}lights;
+layout (shared, binding = 0) uniform Lights
+{
+	DirLight dirLights[NR_DIR_LIGHTS];
+	PointLight pointLights[NR_POINT_LIGHTS];
+	SpotLight spotLights[NR_SPOT_LIGHTS];
+};
 
 vec4 CalcDirLight(DirLight light, inout ActiveMaterial material, vec3 normal, vec3 fragPos, vec3 viewDir);
 vec4 CalcPointLight(PointLight light, inout ActiveMaterial material, vec3 normal, vec3 fragPos, vec3 viewDir);

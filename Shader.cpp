@@ -21,7 +21,7 @@ const std::vector<const LightSource*>* SceneInfo::GetSceneLights() const
 }
 
 
-unsigned int Shader::ID()
+unsigned int Shader::ID() const
 {
 	return programID;
 }
@@ -301,5 +301,124 @@ void Shader::checkCompileErrors(unsigned int shader, std::string type)
 			glGetProgramInfoLog(shader, 1024, NULL, infoLog);
 			std::cout << "ERROR::PROGRAM_LINKING_ERROR of type: " << type << '\n' << infoLog << "\n -- -------------";
 		}
+	}
+}
+
+
+LightsUBO::LightsUBO(const Shader& shader, int dirLightsCnt, int pntLightsCnt, int sptLightsCnt)
+{
+	this->dirLightsCnt = glm::max(0, dirLightsCnt);
+	this->pntLightsCnt = glm::max(0, pntLightsCnt);
+	this->sptLightsCnt = glm::max(0, sptLightsCnt);
+	this->dirLghtOffsets = new GLint[this->dirLightsCnt * 4];
+	this->pntLghtOffsets = new GLint[this->pntLightsCnt * (4 + 3)];
+	this->sptLghtOffsets = new GLint[this->sptLightsCnt * (5 + 5)];
+	GenerateBuffer(shader);
+}
+
+LightsUBO::~LightsUBO()
+{
+	delete[] dirLghtOffsets;
+	delete[] pntLghtOffsets;
+	delete[] sptLghtOffsets;
+}
+
+void LightsUBO::GenerateBuffer(const Shader& shader)
+{
+	glGenBuffers(1, &uboBuf);
+	glBindBuffer(GL_UNIFORM_BUFFER, uboBuf);
+	glBufferData(GL_UNIFORM_BUFFER, dirLightsCnt * 4 * sizeof(glm::vec3) +
+		pntLightsCnt * (4 * sizeof(glm::vec3) + 3 * sizeof(float)) +
+		sptLightsCnt * (5 * sizeof(glm::vec4)), NULL, GL_STATIC_DRAW);
+	for (int i = 0; i < dirLightsCnt; i++)
+	{
+		std::string uniformNamesTmp[] =
+		{
+			"dirLights[" + std::to_string(i) + "].ambient",
+			"dirLights[" + std::to_string(i) + "].diffuse",
+			"dirLights[" + std::to_string(i) + "].specular",
+			"dirLights[" + std::to_string(i) + "].direction"
+		};
+		const char* uniformNames[] =
+		{
+			uniformNamesTmp[0].c_str(),
+			uniformNamesTmp[1].c_str(),
+			uniformNamesTmp[2].c_str(),
+			uniformNamesTmp[3].c_str()
+		};
+		GLuint indices[4];
+		glGetUniformIndices(shader.ID(), 4, uniformNames, indices);
+		glGetActiveUniformsiv(shader.ID(), 4, indices, GL_UNIFORM_OFFSET, &dirLghtOffsets[i * 4]);
+	}
+
+	for (int i = 0; i < pntLightsCnt; i++)
+	{
+		std::string uniformNamesTmp[] =
+		{
+			"pointLights[" + std::to_string(i) + "].ambient",
+			"pointLights[" + std::to_string(i) + "].diffuse",
+			"pointLights[" + std::to_string(i) + "].specular",
+			"pointLights[" + std::to_string(i) + "].position",
+			"pointLights[" + std::to_string(i) + "].constant",
+			"pointLights[" + std::to_string(i) + "].linear",
+			"pointLights[" + std::to_string(i) + "].quadratic"
+		};
+		const char* uniformNames[] =
+		{
+			uniformNamesTmp[0].c_str(),
+			uniformNamesTmp[1].c_str(),
+			uniformNamesTmp[2].c_str(),
+			uniformNamesTmp[3].c_str(),
+			uniformNamesTmp[4].c_str(),
+			uniformNamesTmp[5].c_str(),
+			uniformNamesTmp[6].c_str()
+		};
+		GLuint indices[7];
+		glGetUniformIndices(shader.ID(), 7, uniformNames, indices);
+		glGetActiveUniformsiv(shader.ID(), 7, indices, GL_UNIFORM_OFFSET, &pntLghtOffsets[i * 7]);
+	}
+
+	for (int i = 0; i < sptLightsCnt; i++)
+	{
+		std::string uniformNamesTmp[] =
+		{
+			"spotLights[" + std::to_string(i) + "].ambient",
+			"spotLights[" + std::to_string(i) + "].diffuse",
+			"spotLights[" + std::to_string(i) + "].specular",
+			"spotLights[" + std::to_string(i) + "].position",
+			"spotLights[" + std::to_string(i) + "].direction",
+			"spotLights[" + std::to_string(i) + "].cutOff",
+			"spotLights[" + std::to_string(i) + "].outerCutOff",
+			"spotLights[" + std::to_string(i) + "].constant",
+			"spotLights[" + std::to_string(i) + "].linear",
+			"spotLights[" + std::to_string(i) + "].quadratic"
+		};
+		const char* uniformNames[] =
+		{
+			uniformNamesTmp[0].c_str(),
+			uniformNamesTmp[1].c_str(),
+			uniformNamesTmp[2].c_str(),
+			uniformNamesTmp[3].c_str(),
+			uniformNamesTmp[4].c_str(),
+			uniformNamesTmp[5].c_str(),
+			uniformNamesTmp[6].c_str(),
+			uniformNamesTmp[7].c_str(),
+			uniformNamesTmp[8].c_str(),
+			uniformNamesTmp[9].c_str()
+		};
+		GLuint indices[10];
+		glGetUniformIndices(shader.ID(), 10, uniformNames, indices);
+		glGetActiveUniformsiv(shader.ID(), 10, indices, GL_UNIFORM_OFFSET, &sptLghtOffsets[i * 10]);
+	}
+}
+
+void LightsUBO::LoadInfo(const std::vector<const LightSource*>& lights)
+{
+	int loadDirLghtCnt = 0;
+	int loadPntLghtCnt = 0;
+	int loadSptLghtCnt = 0;
+	for (int i = 0; i < lights.size(); i++)
+	{
+		lights[i]->GetType();
 	}
 }

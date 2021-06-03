@@ -262,6 +262,10 @@ void Map::Initialize()
 	ps->BindToCamera(camera, glm::vec3(5.0f, 2.0f, 0.0f));
 	AddObject(ps);
 
+	//	Юниформ-буффер источников света
+	LightsUBO lightsUbo = LightsUBO(*standartShader, 2, 8, 8);
+
+
 	for (int j = 0; j < objects.size(); j++)
 	{
 		auto model = objects[j]->GetModel();

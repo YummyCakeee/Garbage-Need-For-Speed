@@ -47,10 +47,26 @@ public:
 	void loadMainInfo(const Camera* camera = NULL, const glm::mat4* modelMatrix = NULL) const;
 	void setSceneInfo(const SceneInfo* const sceneInfo);
 	void setCameraAndModelMatrix(const Camera* camera, const glm::mat4* modelMatrix);
-	unsigned int ID();
+	unsigned int ID() const;
 
 private:
 	unsigned int programID;
 	void checkCompileErrors(unsigned int shader, std::string type);
 };
 
+class LightsUBO
+{
+private:
+	GLuint uboBuf;
+	GLint* dirLghtOffsets;
+	GLint* pntLghtOffsets;
+	GLint* sptLghtOffsets;
+	int dirLightsCnt;
+	int pntLightsCnt;
+	int sptLightsCnt;
+	void GenerateBuffer(const Shader& shader);
+public:
+	LightsUBO(const Shader& shader, int dirLightsCnt, int pntLightsCnt, int sptLightsCnt);
+	~LightsUBO();
+	void LoadInfo(const std::vector<const LightSource*>& lights);
+};
