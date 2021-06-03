@@ -1,0 +1,67 @@
+# Blender MTL File: 'None'
+# Material Count: 5
+
+newmtl Branches_01_Mat
+Ns 25.000006
+Ka 1.000000 1.000000 1.000000
+Kd 0.588000 0.588000 0.588000
+Ks 0.292500 0.292500 0.292500
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Bump -bm 0.300000 map\\Normal_Bump_Normal Bump.tga
+map_Kd map\\Branches_01.png
+map_d map\\Branches_01_Opacity.jpg
+
+newmtl Cap_02_Mat
+Ns 25.000006
+Ka 1.000000 1.000000 1.000000
+Kd 0.588000 0.588000 0.588000
+Ks 0.292500 0.292500 0.292500
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Bump -bm 0.300000 map\\Normal_Bump_Normal Bump.tga
+map_Kd map\\Cap_02.jpg
+map_d map\\Cap_02_Opacity.jpg
+
+newmtl EasternRedCedarBark_Mat
+Ns 25.000006
+Ka 1.000000 1.000000 1.000000
+Kd 0.588000 0.588000 0.588000
+Ks 0.292500 0.292500 0.292500
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Bump -bm 0.300000 map\\Normal_Bump_Normal Bump.tga
+map_Kd map\\EasternRedCedarBark.jpg
+map_d map\\EasternRedCedarBark_Opacity.jpg
+
+newmtl EasternRedCedarNeedles_1_Mat
+Ns 40.000007
+Ka 1.000000 1.000000 1.000000
+Kd 0.588000 0.588000 0.588000
+Ks 0.414000 0.414000 0.414000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Bump -bm 0.300000 map\\Normal_Bump_Normal Bump.tga
+map_Kd map\\EasternRedCedarNeedles_1.png
+map_d map\\EasternRedCedarNeedles_1_Opacity.jpg
+
+newmtl EasternRedCedarNeedles_2_Mat
+Ns 40.000007
+Ka 1.000000 1.000000 1.000000
+Kd 0.588000 0.588000 0.588000
+Ks 0.414000 0.414000 0.414000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Bump -bm 0.300000 map\\Normal_Bump_Normal Bump.tga
+map_Kd map\\EasternRedCedarNeedles_2.png
+map_d map\\EasternRedCedarNeedles_2_Opacity.jpg

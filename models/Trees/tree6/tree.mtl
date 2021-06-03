@@ -1,0 +1,59 @@
+# Blender MTL File: 'tree.blend'
+# Material Count: 5
+
+newmtl Branches_01_Mat.002
+Ns 56.250000
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd exp\\Branches_01.jpg
+map_d exp\\Branches_01_Opacity.jpg
+
+newmtl Cap_02_Mat.002
+Ns 56.250000
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd exp\\Cap_02.jpg
+map_d exp\\Cap_02_Opacity.jpg
+
+newmtl EasternRedCedarBark_Mat.002
+Ns 56.250000
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Bump exp\\EasternRedCedarBark_Normal.jpg
+map_Kd exp\\EasternRedCedarBark.jpg
+map_d exp\\EasternRedCedarBark_Opacity.jpg
+
+newmtl EasternRedCedarNeedles_1_Mat.002
+Ns 179.999996
+Ka 1.000000 1.000000 1.000000
+Kd 1.000000 1.000000 1.000000
+Ks 1.000000 1.000000 1.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 3
+
+newmtl EasternRedCedarNeedles_2_Mat.002
+Ns 179.999996
+Ka 1.000000 1.000000 1.000000
+Kd 1.000000 1.000000 1.000000
+Ks 1.000000 1.000000 1.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 3

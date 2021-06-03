@@ -1,0 +1,72 @@
+newmtl Model001_Material001
+map_Kd grey_light.png
+map_bump bumpmap_flat.png
+
+newmtl Model001_Material002
+map_Kd white_transparent.png
+map_bump glass_nm.png
+
+newmtl Model001_Material003
+map_Kd generichull3.png
+map_bump bumpmap_flat.png
+
+newmtl Model001_Material004
+map_Kd body_base.png
+map_bump bumpmap_flat.png
+
+newmtl Model001_Material005
+map_Kd red.png
+map_bump glass_nm.png
+
+newmtl Model001_Material006
+map_Kd chrome.png
+map_bump glass_nm.png
+
+newmtl Model001_Material007
+map_Kd glass_grey_transparent.png
+map_bump glass_nm.png
+
+newmtl Model001_Material008
+map_Kd glass_green_flat.png
+map_bump glass_nm.png
+
+newmtl Model001_Material009
+map_Kd generichull3.png
+map_bump bumpmap_flat.png
+
+newmtl Model001_Material010
+map_Kd interior_base.png
+map_bump bumpmap_flat.png
+
+newmtl Model001_Material011
+map_Kd interior_base.png
+map_bump bumpmap_flat.png
+
+newmtl Model001_Material012
+map_Kd grey_light.png
+map_bump glass_nm.png
+
+newmtl Model001_Material013
+map_Kd white_fuselage.png
+map_bump bumpmap_flat.png
+
+newmtl Model001_Material014
+map_Kd generichull3.png
+map_bump bumpmap_flat.png
+
+newmtl Model001_Material015
+map_Kd red lada.png
+map_bump glass_nm.png
+
+newmtl Model001_Material016
+map_Kd amber.png
+map_bump glass_nm.png
+
+newmtl Model001_Material017
+map_Kd off-black.png
+map_bump bumpmap_flat.png
+
+newmtl Model001_Material018
+map_Kd grey_medium.png
+map_bump bumpmap_flat.png
+
