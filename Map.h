@@ -20,6 +20,7 @@ private:
 	std::vector<Bot*> bots;
 	std::vector<Object*> roadObjects;
 	std::vector<LightSource*> lights;
+	LightsUBO lightsUbo;
 	std::vector<const LightSource*> activeLights;
 	std::map<std::string, Model*> models;
 	std::map<std::string, Shader*> shaders;

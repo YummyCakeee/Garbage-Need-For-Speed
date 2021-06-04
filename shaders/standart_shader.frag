@@ -1,8 +1,8 @@
 #version 450 core
 
-#define NR_POINT_LIGHTS 8
-#define NR_SPOT_LIGHTS 8
-#define NR_DIR_LIGHTS 2
+#define NR_DIR_LIGHTS 1
+#define NR_POINT_LIGHTS 6
+#define NR_SPOT_LIGHTS 6
 
 struct Material
 {
@@ -63,6 +63,9 @@ struct SpotLight
 
 layout (shared, binding = 0) uniform Lights
 {
+	int dirLigtsCnt;
+	int pntLigtsCnt;
+	int sptLigtsCnt;
 	DirLight dirLights[NR_DIR_LIGHTS];
 	PointLight pointLights[NR_POINT_LIGHTS];
 	SpotLight spotLights[NR_SPOT_LIGHTS];
@@ -78,19 +81,12 @@ in vec3 FragPos;
 in vec2 TextureCoords;
 uniform vec3 viewPos;
 uniform Material material;
-uniform DirLight dirLight[NR_DIR_LIGHTS];
-uniform PointLight pointLight[NR_POINT_LIGHTS];
-uniform SpotLight spotLight[NR_SPOT_LIGHTS];
-uniform int dirLgtsCnt;
-uniform int pntLgtsCnt;
-uniform int sptLgtsCnt;
 uniform samplerCube skybox;
 uniform bool hasSkybox;
 
 void main()
 {
 	//	MATERIAL PREPARING
-
 	ActiveMaterial activeMat = ActiveMaterial(vec4(0.0), vec4(0.0), vec4(0.0), 0.0f, 0.0f);
 
 	if (material.ambTextCount <= 0)
@@ -133,23 +129,24 @@ void main()
 	//	Light Calculating
 	
 	//	Directional lights
-	int dLightsC = min(dirLgtsCnt, NR_DIR_LIGHTS);
+	int dLightsC = min(dirLigtsCnt, NR_DIR_LIGHTS);
 	for (int i = 0; i < dLightsC; i++)
 	{
-		FragColor += CalcDirLight(dirLight[i], activeMat, normal, FragPos, viewDir);
+		FragColor += CalcDirLight(dirLights[i], activeMat, normal, FragPos, viewDir);
 	}
+
 	//	Point lights
-	int pLightsC = min(pntLgtsCnt, NR_POINT_LIGHTS);
+	int pLightsC = min(pntLigtsCnt, NR_POINT_LIGHTS);
 	for (int i = 0; i < pLightsC; i++)
 	{
-		FragColor += CalcPointLight(pointLight[i], activeMat, normal, FragPos, viewDir);
+		FragColor += CalcPointLight(pointLights[i], activeMat, normal, FragPos, viewDir);
 	}
 
 	//	Spot lights
-	int sLightsC = min(sptLgtsCnt, NR_SPOT_LIGHTS);
-	for (int i = 0; i < sLightsC; i++)
+	int sLightsC = min(sptLigtsCnt, NR_SPOT_LIGHTS);
+	for (int i = 0; i < 4; i++)
 	{
-		FragColor += CalcSpotLight(spotLight[i], activeMat, normal, FragPos, viewDir);	
+		FragColor += CalcSpotLight(spotLights[i], activeMat, normal, FragPos, viewDir);	
 	}
 	FragColor.a = activeMat.diffuse.a;
 	//	Final Mix

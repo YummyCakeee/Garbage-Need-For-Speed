@@ -13,12 +13,9 @@
 class SceneInfo
 {
 private:
-	const std::vector<const LightSource*>* lights;
 public:
 	SceneInfo();
 	~SceneInfo();
-	void SetSceneLights(const std::vector<const LightSource*>* lights);
-	const std::vector<const LightSource*>* GetSceneLights() const;
 };
 
 class Shader
@@ -27,7 +24,6 @@ private:
 	SceneInfo* sceneInfo;
 	const Camera* camera;
 	const glm::mat4* modelMatrix;
-	void loadLights() const;
 	void loadCameraAndModelMatrix(const Camera* camera = NULL, const glm::mat4* modelMatrix = NULL) const;
 public:
 	Shader(const char* vertexPath, const char* fragmentPath);
@@ -45,7 +41,6 @@ public:
 	void setVec(const std::string& name, glm::vec4 vector) const;
 	void setMatrix4F(const std::string& name, glm::mat4& m) const;
 	void loadMainInfo(const Camera* camera = NULL, const glm::mat4* modelMatrix = NULL) const;
-	void setSceneInfo(const SceneInfo* const sceneInfo);
 	void setCameraAndModelMatrix(const Camera* camera, const glm::mat4* modelMatrix);
 	unsigned int ID() const;
 
@@ -58,6 +53,7 @@ class LightsUBO
 {
 private:
 	GLuint uboBuf;
+	GLint countersOffsets[3];
 	GLint* dirLghtOffsets;
 	GLint* pntLghtOffsets;
 	GLint* sptLghtOffsets;
@@ -66,6 +62,7 @@ private:
 	int sptLightsCnt;
 	void GenerateBuffer(const Shader& shader);
 public:
+	LightsUBO();
 	LightsUBO(const Shader& shader, int dirLightsCnt, int pntLightsCnt, int sptLightsCnt);
 	~LightsUBO();
 	void LoadInfo(const std::vector<const LightSource*>& lights);

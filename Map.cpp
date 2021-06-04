@@ -263,7 +263,7 @@ void Map::Initialize()
 	AddObject(ps);
 
 	//	Юниформ-буффер источников света
-	LightsUBO lightsUbo = LightsUBO(*standartShader, 2, 8, 8);
+	lightsUbo = LightsUBO(*standartShader, 2, 0, 10);
 
 
 	for (int j = 0; j < objects.size(); j++)
@@ -422,18 +422,13 @@ void Map::Update()
 		{
 			float angle = glm::acos(glm::dot(lightDir, camDir)) * 180.0f / glm::pi<float>();
 			float lightDist = glm::distance(lightPos, camPos);
-			if (lightDist <= 35.0f && angle < 110.0f || lightDist < 5.0f)
+			if (lightDist <= 25.0f && angle < 110.0f || lightDist < 5.0f)
 			{
 				activeLights.push_back(lights[i]);
 			}
 		}
 	}
-	SceneInfo sceneInfo;
-	sceneInfo.SetSceneLights(&activeLights);
-	for (auto it = shaders.begin(); it != shaders.end(); it++)
-	{
-		it->second->setSceneInfo(&sceneInfo);
-	}
+	lightsUbo.LoadInfo(activeLights);
 }
 
 void Map::Clear()
