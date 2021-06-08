@@ -190,7 +190,7 @@ void CameraTPM::ProcessInput(const std::vector<Key>& keys, Mouse& mouse, double 
 		Rotate(offset.x, -offset.y, false);
 	offset = mouse.GetScrollOffset();
 	if (offset.y != 0.0)
-		ChangeRadius(offset.y);
+		ChangeRadius(-offset.y);
 }
 
 void CameraTPM::ChangeRadius(float offset)

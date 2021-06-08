@@ -14,40 +14,29 @@ unsigned int Shader::ID() const
 	return programID;
 }
 
-Shader::Shader(const char* vertexPath, const char* fragmentPath)
+Shader::Shader(const char* vertexPath, const char* fragmentPath, const char* geometryPath)
 {
-	sceneInfo = new SceneInfo();
 	const char* vShaderCode;
 	const char* fShaderCode;
-
-	std::string vTempString;
-	std::string fTempString;
-
-	std::ifstream vShaderFile;
-	std::ifstream fShaderFile;
-	vShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-	fShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-
-
+	const char* gShaderCode;
+	std::string vCode, fCode, gCode;
 	try
 	{
-		std::stringstream vShaderStream;
-		vShaderFile.open(vertexPath);
-		vShaderStream << vShaderFile.rdbuf();
-		vShaderFile.close();
-		vTempString = vShaderStream.str();
-		vShaderCode = vTempString.c_str();
-
-		std::stringstream fShaderStream;
-		fShaderFile.open(fragmentPath);
-		fShaderStream << fShaderFile.rdbuf();
-		fShaderFile.close();
-		fTempString = fShaderStream.str();
-		fShaderCode = fTempString.c_str();
+		vCode = readShaderFromFile(vertexPath);
+		vShaderCode = vCode.c_str();
+		fCode = readShaderFromFile(fragmentPath);
+		fShaderCode = fCode.c_str();
+		
+		if (geometryPath != NULL)
+		{
+			gCode = readShaderFromFile(geometryPath);
+			gShaderCode = gCode.c_str();
+		}
 	}
 	catch (std::ifstream::failure& e)
 	{
 		std::cout << "ERROR::SHADER::FILE_NOT_SUCCESSFULLY_READ" << std::endl;
+		return;
 	}
 
 	unsigned int vertex;
@@ -56,28 +45,54 @@ Shader::Shader(const char* vertexPath, const char* fragmentPath)
 	glCompileShader(vertex);
 	checkCompileErrors(vertex, "VERTEX");
 
-
 	unsigned int fragment;
 	fragment = glCreateShader(GL_FRAGMENT_SHADER);
 	glShaderSource(fragment, 1, &fShaderCode, NULL);
 	glCompileShader(fragment);
 	checkCompileErrors(fragment, "FRAGMENT");
 
+	unsigned int geometry;
+	if (geometryPath != NULL)
+	{
+		geometry = glCreateShader(GL_GEOMETRY_SHADER);
+		glShaderSource(geometry, 1, &gShaderCode, NULL);
+		glCompileShader(geometry);
+		checkCompileErrors(geometry, "GEOMETRY");
+	}
+
 	programID = glCreateProgram();
 	glAttachShader(programID, vertex);
 	glAttachShader(programID, fragment);
+	if (geometryPath != NULL)
+		glAttachShader(programID, geometry);
 	glLinkProgram(programID);
 	checkCompileErrors(programID, "PROGRAM");
 
 	glDeleteShader(vertex);
 	glDeleteShader(fragment);
-	sceneInfo = NULL;
+	if (geometryPath != NULL)
+		glDeleteShader(geometry);
 	camera = NULL;
 	modelMatrix = NULL;
 }
+
 Shader::~Shader()
 {
 	glDeleteProgram(programID);
+}
+
+std::string Shader::readShaderFromFile(const char* path)
+{
+	std::string tmpCode;
+	std::ifstream shaderFile;
+	shaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+	std::stringstream shaderStream;
+	shaderFile.open(path);
+	shaderStream << shaderFile.rdbuf();
+	shaderFile.close();
+	tmpCode = shaderStream.str();
+	
+	return tmpCode;
 }
 
 void Shader::use() const
@@ -211,7 +226,7 @@ void Shader::checkCompileErrors(unsigned int shader, std::string type)
 
 LightsUBO::LightsUBO()
 {
-	uboBuf = 0;
+	lightsUBO = 0;
 	dirLightsCnt = 0;
 	pntLightsCnt = 0;
 	sptLightsCnt = 0;
@@ -242,13 +257,16 @@ LightsUBO::~LightsUBO()
 
 void LightsUBO::GenerateBuffer(const Shader& shader)
 {
-	glGenBuffers(1, &uboBuf);
-	glBindBuffer(GL_UNIFORM_BUFFER, uboBuf);
-	//	Память на три переменные-счётчики числа источников света + источники направленного + точечного + прожекторного
-	glBufferData(GL_UNIFORM_BUFFER, 3 * sizeof(int) + dirLightsCnt * 4 * sizeof(glm::vec3) +
-		pntLightsCnt * (4 * sizeof(glm::vec3) + 3 * sizeof(float)) +
-		sptLightsCnt * (5 * sizeof(glm::vec4)), NULL, GL_STATIC_DRAW);
-
+	//	Создание буфера для источников
+	glGenBuffers(1, &lightsUBO);
+	glBindBuffer(GL_UNIFORM_BUFFER, lightsUBO);
+	//	Память на три переменную-счётчик числа источников света + источники света
+	int blockSize;
+	glGetActiveUniformBlockiv(shader.ID(), 0,
+		GL_UNIFORM_BLOCK_DATA_SIZE, &blockSize);
+	glBufferData(GL_UNIFORM_BUFFER, blockSize, NULL, GL_STATIC_DRAW);
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+	
 	//	Получение сдвигов для счётчиков источников света
 	std::string uniformNamesTmp[] =
 	{
@@ -350,22 +368,22 @@ void LightsUBO::GenerateBuffer(const Shader& shader)
 
 	//	Задание начальных значений для числа источников света
 	int zero = 0;
+	glBindBuffer(GL_UNIFORM_BUFFER, lightsUBO);
 	glBufferSubData(GL_UNIFORM_BUFFER, countersOffsets[0], sizeof(int), &zero);
 	glBufferSubData(GL_UNIFORM_BUFFER, countersOffsets[1], sizeof(int), &zero);
 	glBufferSubData(GL_UNIFORM_BUFFER, countersOffsets[2], sizeof(int), &zero);
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 	//	Привязка буфера к точке
-	glBindBufferBase(GL_UNIFORM_BUFFER, 0, uboBuf);
+	glBindBufferBase(GL_UNIFORM_BUFFER, 0, lightsUBO);
 }
 
 void LightsUBO::LoadInfo(const std::vector<const LightSource*>& lights)
 {
-	glBindBuffer(GL_UNIFORM_BUFFER, uboBuf);
 	int loadDirLghtCnt = 0;
 	int loadPntLghtCnt = 0;
 	int loadSptLghtCnt = 0;
-
+	glBindBuffer(GL_UNIFORM_BUFFER, lightsUBO);
 	//	Загрузка в буфер данных источников света
 	for (int i = 0; i < lights.size(); i++)
 	{
@@ -430,8 +448,11 @@ void LightsUBO::LoadInfo(const std::vector<const LightSource*>& lights)
 	}
 
 	//	Загрузка в буфер информации о числе источников света
+	glBindBuffer(GL_UNIFORM_BUFFER, lightsUBO);
 	glBufferSubData(GL_UNIFORM_BUFFER, countersOffsets[0], sizeof(int), &loadDirLghtCnt);
+	//glBindBuffer(GL_UNIFORM_BUFFER, pntLightsUBO);
 	glBufferSubData(GL_UNIFORM_BUFFER, countersOffsets[1], sizeof(int), &loadPntLghtCnt);
+	//glBindBuffer(GL_UNIFORM_BUFFER, sptLightsUBO);
 	glBufferSubData(GL_UNIFORM_BUFFER, countersOffsets[2], sizeof(int), &loadSptLghtCnt);
 
 	//	Отвязка буфера

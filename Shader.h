@@ -21,12 +21,12 @@ public:
 class Shader
 {
 private:
-	SceneInfo* sceneInfo;
 	const Camera* camera;
 	const glm::mat4* modelMatrix;
 	void loadCameraAndModelMatrix(const Camera* camera = NULL, const glm::mat4* modelMatrix = NULL) const;
+	std::string readShaderFromFile(const char* path);
 public:
-	Shader(const char* vertexPath, const char* fragmentPath);
+	Shader(const char* vertexPath, const char* fragmentPath, const char* geometryPath = NULL);
 	~Shader();
 	void use() const;
 	void free();
@@ -52,7 +52,7 @@ private:
 class LightsUBO
 {
 private:
-	GLuint uboBuf;
+	GLuint lightsUBO;
 	GLint countersOffsets[3];
 	GLint* dirLghtOffsets;
 	GLint* pntLghtOffsets;

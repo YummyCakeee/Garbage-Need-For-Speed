@@ -187,8 +187,8 @@ void Car::ProcessInput(const std::vector<Key>& keys, Mouse& mouse, double dTime)
 		AddForce(-longSpeedDir * GetDriveForce() * 2.7f);
 	}
 	//	Обработка отпускания клавиш
-	if (keys[int(KeysEnum::A)].state == KeyState::RELEASE &&
-		keys[int(KeysEnum::D)].state == KeyState::RELEASE)
+	if (keys[int(KeysEnum::A)].state == KeyState::UNPRESS &&
+		keys[int(KeysEnum::D)].state == KeyState::UNPRESS)
 	{
 		Turn(0.0, dTime);
 	}

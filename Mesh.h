@@ -16,7 +16,7 @@ enum class MaterialType
 
 enum class MaterialProp
 {
-	SHININESS, ALPHA
+	SHININESS, ALPHA, REFLECTIVITY
 };
 
 class Vertex
@@ -50,6 +50,7 @@ private:
 	glm::vec4 specularColor;
 	float shininess;
 	float alpha;
+	float reflectivity;
 	bool hasTransparency;
 	Shader* shader = NULL;
 public:

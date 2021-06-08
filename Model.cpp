@@ -217,7 +217,9 @@ std::vector<Texture> Model::LoadMaterialTextures(aiMaterial* material, aiTexture
 		}
 		if (!loaded)
 		{
-			Texture texture = Texture::LoadTexture(std::string(directory + "\\" + path.C_Str()));
+			bool loadSRGB = false;
+			if (type == TextureType::Diffuse) loadSRGB = true;
+			Texture texture = Texture::LoadTexture(std::string(directory + "\\" + path.C_Str()), loadSRGB);
 			texture.SetType(type);
 			textures.push_back(texture);
 		}

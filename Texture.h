@@ -28,6 +28,6 @@ public:
 	int GetChannelsCount();
 	void SetType(TextureType type);
 	void SetPath(const std::string& path);
-	static Texture LoadTexture(const std::string& path);
+	static Texture LoadTexture(const std::string& path, bool useSRGB = false);
 	static unsigned int LoadCubeMap(const std::vector<std::string>& pathes);
 };

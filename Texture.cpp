@@ -46,7 +46,7 @@ void Texture::SetPath(const std::string& path)
 	this->path = path;
 }
 
-Texture Texture::LoadTexture(const std::string& path)
+Texture Texture::LoadTexture(const std::string& path, bool useSRGB)
 {
 	GLuint texture;
 	glGenTextures(1, &texture);
@@ -67,10 +67,16 @@ Texture Texture::LoadTexture(const std::string& path)
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_R, textureWdth, textureHght, 0, GL_R, GL_UNSIGNED_BYTE, image);
 		break;
 	case 3:
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, textureWdth, textureHght, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+		if (useSRGB)
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB, textureWdth, textureHght, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+		else
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, textureWdth, textureHght, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
 		break;
 	case 4:
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, textureWdth, textureHght, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
+		if (useSRGB)
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB_ALPHA, textureWdth, textureHght, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
+		else
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, textureWdth, textureHght, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
 		break;
 	default:
 		break;
@@ -108,9 +114,9 @@ unsigned int Texture::LoadCubeMap(const std::vector<std::string>& pathes)
 			return 0;
 		}
 		if (channels == 4)
-			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGBA, textureWdth, textureHght, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
+			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_SRGB_ALPHA, textureWdth, textureHght, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
 		else
-			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, textureWdth, textureHght, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_SRGB, textureWdth, textureHght, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
 		SOIL_free_image_data(image);
 	}
 

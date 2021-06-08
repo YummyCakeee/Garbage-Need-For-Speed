@@ -93,6 +93,10 @@ void Key_callback(GLFWwindow* win, int key, int scancode, int action, int mods)
 		{
 			gameGlob.SetKeyState(KeysEnum::SPACE, KeyState::PRESS);
 		}
+		if (key == GLFW_KEY_ENTER)
+		{
+			gameGlob.SetKeyState(KeysEnum::ENTER, KeyState::PRESS);
+		}
 		if (key == GLFW_KEY_ESCAPE)
 		{
 			glfwSetWindowShouldClose(win, true);
@@ -156,6 +160,10 @@ void Key_callback(GLFWwindow* win, int key, int scancode, int action, int mods)
 		{
 			gameGlob.SetKeyState(KeysEnum::SPACE, KeyState::RELEASE);
 		}
+		if (key == GLFW_KEY_ENTER)
+		{
+			gameGlob.SetKeyState(KeysEnum::ENTER, KeyState::RELEASE);
+		}
 	}
 
 }
@@ -168,7 +176,7 @@ int main()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 4.5);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-	GLFWwindow* win = glfwCreateWindow(gameGlob.GetWindowWidth(), gameGlob.GetWindowHeight(),
+	GLFWwindow* win = glfwCreateWindow(gameGlob.gameProps.GetWindowWidth(), gameGlob.gameProps.GetWindowHeight(),
 		"Garbage Need For Speed", NULL, NULL);
 	if (win == NULL)
 	{
@@ -189,9 +197,9 @@ int main()
 	glfwSetCursorPosCallback(win, Mouse_callback);
 	glfwSetScrollCallback(win, Scroll_callback);
 	glfwSetKeyCallback(win, Key_callback);
-	glfwSetCursorPos(win, (double)gameGlob.GetWindowWidth() / 2.0f, (double)gameGlob.GetWindowHeight() / 2.0f);
+	glfwSetCursorPos(win, (double)gameGlob.gameProps.GetWindowWidth() / 2.0f, (double)gameGlob.gameProps.GetWindowHeight() / 2.0f);
 	glewExperimental = GL_TRUE;
-	glViewport(0, 0, gameGlob.GetWindowWidth(), gameGlob.GetWindowHeight());
+	glViewport(0, 0, gameGlob.gameProps.GetWindowWidth(), gameGlob.gameProps.GetWindowHeight());
 #pragma endregion
 
 	srand(time(NULL));
@@ -205,7 +213,7 @@ int main()
 	unsigned int texColorBuffer;
 	glGenTextures(1, &texColorBuffer);
 	glBindTexture(GL_TEXTURE_2D, texColorBuffer);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, gameGlob.GetWindowWidth(), gameGlob.GetWindowHeight(), 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, gameGlob.gameProps.GetWindowWidth(), gameGlob.gameProps.GetWindowHeight(), 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glBindTexture(GL_TEXTURE_2D, 0);
@@ -215,7 +223,7 @@ int main()
 	unsigned int rbo;
 	glGenRenderbuffers(1, &rbo);
 	glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, gameGlob.GetWindowWidth(), gameGlob.GetWindowHeight());
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, gameGlob.gameProps.GetWindowWidth(), gameGlob.gameProps.GetWindowHeight());
 	glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
@@ -277,6 +285,7 @@ int main()
 		glDisable(GL_BLEND);
 		glDisable(GL_CULL_FACE);
 		screenShader->use();
+		screenShader->setBool("gammaCor", gameGlob.gameProps.IsGammaCorrectionEnabled());
 		screenShader->setVec("playerSpeed", (glm::vec3)gameGlob.GetMap()->GetPlayer()->GetSpeed());
 		glBindVertexArray(quadVAO);
 		glBindTexture(GL_TEXTURE_2D, texColorBuffer);

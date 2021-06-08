@@ -4,7 +4,7 @@ Map::Map()
 {
 	LoadGameProps();
 	treesCount = 100;
-	botsCount = 10;
+	botsCount = 15;
 }
 
 void Map::RenderSkybox()
@@ -64,6 +64,12 @@ bool Map::LoadGameProps()
 Object* Map::GetPlayer()
 {
 	return player;
+}
+
+bool cmp(const std::pair<float, int>& a,
+	const std::pair<float, int>& b)
+{
+	return a.second < b.second;
 }
 
 void Map::Initialize()
@@ -248,7 +254,8 @@ void Map::Initialize()
 
 	camera->BindToTarget(car->GetPosition());
 	camera->offset = glm::vec3(0.0f, 0.2f, 0.0f);
-	ParticleSystem* ps = new ParticleSystem(0.05f, 10, 300, true, false, glm::vec3(6.0f, 0.0f, 6.0f), 100.0f);
+	ParticleSystem* ps = new ParticleSystem(0.02f, 3, 600, true, false, glm::vec3(6.0f, 0.0f, 6.0f), 100.0f);
+	ps->SetParticlesAcceleration(glm::vec3(0.0f, -0.2f, 0.0f));
 	Model* rainDrop = new Model(std::filesystem::canonical("models/Other/raindrop").string(),
 		"raindrop.obj", camera, glm::vec3(1.0f, 0.0f, 0.0f));
 	rainDrop->SetGlobalShader(raindropShader);
@@ -263,7 +270,7 @@ void Map::Initialize()
 	AddObject(ps);
 
 	//	Юниформ-буффер источников света
-	lightsUbo = LightsUBO(*standartShader, 2, 0, 10);
+	lightsUbo = LightsUBO(*standartShader, 1, 4, 10);
 
 
 	for (int j = 0; j < objects.size(); j++)
@@ -394,6 +401,7 @@ void Map::Update()
 	glm::vec3 camDir = glm::normalize(player->GetModel()->GetCamera()->GetFront());
 	glm::vec3 camPos = player->GetModel()->GetCamera()->GetPosition();
 	activeLights.clear();
+	std::list<std::pair<int, float>> lightsDistances;
 	for (int i = 0; i < lights.size(); i++)
 	{
 		switch (lights[i]->GetType())
@@ -405,12 +413,12 @@ void Map::Update()
 		break;
 		case SourceType::SPOTLIGHT:
 		{
-			lightPos = ((PointLight*)lights[i])->GetPosition();
+			lightPos = ((SpotLight*)lights[i])->GetPosition();
 		}
 		break;
 		case SourceType::DIRECTIONAL:
 		{
-			activeLights.push_back(lights[i]);
+			lightsDistances.push_back(std::make_pair(i, 0.0f));
 			continue;
 		}
 		default:
@@ -422,11 +430,18 @@ void Map::Update()
 		{
 			float angle = glm::acos(glm::dot(lightDir, camDir)) * 180.0f / glm::pi<float>();
 			float lightDist = glm::distance(lightPos, camPos);
-			if (lightDist <= 25.0f && angle < 110.0f || lightDist < 5.0f)
+			if (lightDist <= 35.0f && angle < 110.0f || lightDist < 5.0f)
 			{
-				activeLights.push_back(lights[i]);
+				lightsDistances.push_back(std::make_pair(i, lightDist));
 			}
 		}
+	}
+	lightsDistances.sort(cmp);
+	//std::sort(lightsDistances.begin(), lightsDistances.end(), cmp);
+
+	for (auto it = lightsDistances.begin(); it != lightsDistances.end(); it++)
+	{
+		activeLights.push_back(lights[it->first]);
 	}
 	lightsUbo.LoadInfo(activeLights);
 }

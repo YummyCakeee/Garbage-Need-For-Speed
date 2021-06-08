@@ -78,6 +78,7 @@ Material::Material()
 	specularColor = glm::vec4(1.0f);
 	shininess = 32.0f;
 	alpha = 1.0f;
+	reflectivity = 0.25f;
 	hasTransparency = false;
 }
 
@@ -95,6 +96,9 @@ float Material::GetProperty(MaterialProp property)
 		break;
 	case MaterialProp::ALPHA:
 		return alpha;
+		break;
+	case MaterialProp::REFLECTIVITY:
+		return reflectivity;
 		break;
 	default:
 		return 0.0f;
@@ -154,6 +158,9 @@ void Material::SetProperty(MaterialProp property, float value)
 	case MaterialProp::ALPHA:
 		alpha = glm::clamp(value, 0.0f, 1.0f);
 		if (alpha < 1.0f) hasTransparency = true;
+		break;
+	case MaterialProp::REFLECTIVITY :
+		reflectivity = glm::clamp(value, 0.0f, 1.0f);
 		break;
 	default:
 		break;
@@ -268,6 +275,7 @@ void Mesh::Draw(const Shader& shader)
 	shader.setVec("material.specular", material.GetColor(MaterialType::SPECULAR));
 	shader.setFloat("material.shininess", material.GetProperty(MaterialProp::SHININESS));
 	shader.setFloat("material.alpha", material.GetProperty(MaterialProp::ALPHA));
+	shader.setFloat("material.reflectivity", material.GetProperty(MaterialProp::REFLECTIVITY));
 	glBindVertexArray(VAO);
 	glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
 	glBindVertexArray(0);
