@@ -164,7 +164,6 @@ void GameGlobal::ProcessInput()
 	}
 	if (keys[int(KeysEnum::ENTER)].state == KeyState::RELEASE)
 	{
-		gameProps.EnableGammaCorrection(!gameProps.IsGammaCorrectionEnabled());
 	}
 	for (auto it = keys.begin(); it != keys.end(); it++)
 	{

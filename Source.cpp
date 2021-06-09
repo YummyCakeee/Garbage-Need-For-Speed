@@ -1,19 +1,12 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
 #include <iostream>
-#include <fstream>
-#include <filesystem>
 #include <time.h>
 #include "Shader.h"
-#include "Model.h"
-#include "Car.h"
-#include "Camera.h"
 #include "GameGlobal.h"
 #include "GameGlobalStructs.h"
-#include "Bot.h"
+#include "FrameBuffer.h"
+
 
 using namespace std;
 GameGlobal gameGlob = GameGlobal(0.0, 1280, 720);
@@ -206,54 +199,7 @@ int main()
 
 	Shader* screenShader = new Shader("shaders\\screen_shader.vert", "shaders\\screen_shader.frag");
 	//	OWN FRAMEBUFFER
-	unsigned int framebuffer;
-	glGenFramebuffers(1, &framebuffer);
-	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-
-	unsigned int texColorBuffer;
-	glGenTextures(1, &texColorBuffer);
-	glBindTexture(GL_TEXTURE_2D, texColorBuffer);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, gameGlob.gameProps.GetWindowWidth(), gameGlob.gameProps.GetWindowHeight(), 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glBindTexture(GL_TEXTURE_2D, 0);
-
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texColorBuffer, 0);
-
-	unsigned int rbo;
-	glGenRenderbuffers(1, &rbo);
-	glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, gameGlob.gameProps.GetWindowWidth(), gameGlob.gameProps.GetWindowHeight());
-	glBindRenderbuffer(GL_RENDERBUFFER, 0);
-
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
-
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-	{
-		std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete" << std::endl;
-	}
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-	float quadVertices[] = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
-	   // positions   // texCoords
-	   -1.0f,  1.0f,  0.0f, 1.0f,
-	   -1.0f, -1.0f,  0.0f, 0.0f,
-		1.0f, -1.0f,  1.0f, 0.0f,
-
-	   -1.0f,  1.0f,  0.0f, 1.0f,
-		1.0f, -1.0f,  1.0f, 0.0f,
-		1.0f,  1.0f,  1.0f, 1.0f
-	};
-	unsigned int quadVAO, quadVBO;
-	glGenVertexArrays(1, &quadVAO);
-	glGenBuffers(1, &quadVBO);
-	glBindVertexArray(quadVAO);
-	glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+	ScreenFrameBuffer sfb = ScreenFrameBuffer(gameGlob.gameProps.GetWindowWidth(), gameGlob.gameProps.GetWindowHeight(), screenShader);
 	//	OWN FRAMEBUFFER~
 
 	Map map;
@@ -263,33 +209,16 @@ int main()
 	//	Игровой цикл
 	while (!glfwWindowShouldClose(win))
 	{
-		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-		glClearColor(0.0f, 0.82f, 1.0f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		glEnable(GL_DEPTH_TEST);
-		glEnable(GL_CULL_FACE);
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		newTime = glfwGetTime();
 		gameGlob.SetDeltaTime(newTime - oldTime);
 		oldTime = newTime;
 		glfwPollEvents();
 		gameGlob.ProcessInput();
-		gameGlob.GetMap()->UpdateObjects(gameGlob.GetDeltaTime());
-		gameGlob.GetMap()->ActBots(gameGlob.GetDeltaTime());
-		gameGlob.GetMap()->Update();
+		gameGlob.GetMap()->Update(gameGlob.GetDeltaTime());
+		sfb.Bind();
+		sfb.PrepareForRender();
 		gameGlob.GetMap()->Render();
-
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		glDisable(GL_DEPTH_TEST);
-		glDisable(GL_BLEND);
-		glDisable(GL_CULL_FACE);
-		screenShader->use();
-		screenShader->setBool("gammaCor", gameGlob.gameProps.IsGammaCorrectionEnabled());
-		screenShader->setVec("playerSpeed", (glm::vec3)gameGlob.GetMap()->GetPlayer()->GetSpeed());
-		glBindVertexArray(quadVAO);
-		glBindTexture(GL_TEXTURE_2D, texColorBuffer);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
+		sfb.Render();
 		glfwSwapBuffers(win);
 	}
 	gameGlob.GetMap()->Clear();

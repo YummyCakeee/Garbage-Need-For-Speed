@@ -32,6 +32,8 @@ private:
 	Object* skybox = NULL;
 	void RenderSkybox();
 	bool LoadGameProps();
+	void UpdateObjects(double dTime);
+	void ActBots(double dTime);
 public:
 	Map();
 	Object* GetPlayer();
@@ -41,14 +43,12 @@ public:
 	void Initialize();
 	void AddObject(Object* object);
 	void AddBot(Bot* bot);
-	void ActBots(double dTime);
 	void SetPlayer(Object* player);
 	void SetCamera(Camera* camera);
 	void SetRoadObject(Object* object);
 	void SetSkybox(Object* skybox);
-	void UpdateObjects(double dTime);
 	void Render();
-	void Update();
+	void Update(float dTime);
 	void QuickCameraSetUp(Camera* camera);
 	void Clear();
 };

@@ -78,7 +78,7 @@ Material::Material()
 	specularColor = glm::vec4(1.0f);
 	shininess = 32.0f;
 	alpha = 1.0f;
-	reflectivity = 0.25f;
+	reflectivity = 0.15f;
 	hasTransparency = false;
 }
 

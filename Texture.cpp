@@ -6,14 +6,18 @@ Texture::Texture()
 	type = TextureType::UNDEFINED;
 	path = "";
 	channelsCount = 3;
+	width = 0.0f;
+	height = 0.0f;
 }
 
-Texture::Texture(unsigned int id, TextureType type, const std::string& path, int channelsCount)
+Texture::Texture(unsigned int id, TextureType type, const std::string& path, float width, float height, int channelsCount)
 {
 	this->id = id;
 	this->type = type;
 	this->path = path;
 	this->channelsCount = channelsCount;
+	this->width = width;
+	this->height = height;
 }
 
 unsigned int Texture::GetId()
@@ -36,6 +40,16 @@ int Texture::GetChannelsCount()
 	return channelsCount;
 }
 
+float Texture::GetWidth()
+{
+	return width;
+}
+
+float Texture::GetHeight()
+{
+	return height;
+}
+
 void Texture::SetType(TextureType type)
 {
 	this->type = type;
@@ -44,6 +58,24 @@ void Texture::SetType(TextureType type)
 void Texture::SetPath(const std::string& path)
 {
 	this->path = path;
+}
+
+void Texture::SetSize(float width, float height)
+{
+	SetWidth(width);
+	SetHeight(height);
+}
+
+void Texture::SetWidth(float width)
+{
+	if (width < 0.0f) this->width = 0.0f;
+	else this->width = width;
+}
+
+void Texture::SetHeight(float height)
+{
+	if (height < 0.0f) this->height = 0.0f;
+	else this->height = height;
 }
 
 Texture Texture::LoadTexture(const std::string& path, bool useSRGB)
@@ -88,7 +120,44 @@ Texture Texture::LoadTexture(const std::string& path, bool useSRGB)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glBindTexture(GL_TEXTURE_2D, 0);
 	SOIL_free_image_data(image);
-	return Texture(texture, TextureType::UNDEFINED, path, channels);
+	return Texture(texture, TextureType::UNDEFINED, path, textureWdth, textureHght, channels);
+}
+
+Texture Texture::CreateEmptyTexture(float width, float height, TextureType type)
+{
+	unsigned int texture;
+	
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_2D, texture);
+	switch (type)
+	{
+	case TextureType::DEPTH:
+	{
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
+			width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	}; break;
+	case TextureType::STENCIL:
+	{
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_STENCIL_INDEX,
+			width, height, 0, GL_STENCIL_INDEX, GL_UNSIGNED_BYTE, NULL);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	}; break;
+	default:
+	{
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
+			width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	}; break;
+	}
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	return Texture(texture, type, "", width, height);
 }
 
 unsigned int Texture::LoadCubeMap(const std::vector<std::string>& pathes)

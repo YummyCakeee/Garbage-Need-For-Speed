@@ -35,6 +35,7 @@
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Car.cpp" />
     <ClCompile Include="Force.cpp" />
+    <ClCompile Include="FrameBuffer.cpp" />
     <ClCompile Include="GameGlobal.cpp" />
     <ClCompile Include="GameGlobalStructs.cpp" />
     <ClCompile Include="LightSource.cpp" />
@@ -52,6 +53,7 @@
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Car.h" />
     <ClInclude Include="Force.h" />
+    <ClInclude Include="FrameBuffer.h" />
     <ClInclude Include="GameGlobal.h" />
     <ClInclude Include="GameGlobalStructs.h" />
     <ClInclude Include="LightSource.h" />

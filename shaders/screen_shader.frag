@@ -4,7 +4,6 @@ in vec2 TexCoords;
 out vec4 FragColor;
 uniform sampler2D screenTexture;
 uniform vec3 playerSpeed;
-uniform bool gammaCor;
 
 void main()
 {	
@@ -36,10 +35,6 @@ void main()
         FragColor = mix(FragColor, sum, t );
     }
 
-    float gamma = 1.1f;
-
-    if (gammaCor)
-    {
-        FragColor.rgb = pow(FragColor.rgb, vec3(1.0f/gamma));
-    }
+    float gamma = 2.2f;
+    FragColor.rgb = pow(FragColor.rgb, vec3(1.0f/gamma));
 }

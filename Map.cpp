@@ -105,6 +105,9 @@ void Map::Initialize()
 	{
 		terrain[i]->SetGlobalShader(standartShader);
 		terrain[i]->SetCamera(camera);
+		Material* mat = terrain[i]->GetMesh(0)->GetMaterial();
+		mat->SetProperty(MaterialProp::REFLECTIVITY, 0.0f);
+		mat->SetColor(MaterialType::SPECULAR, glm::vec4(0.005f, 0.005f, 0.005f, 1.0f));
 		models.insert(std::make_pair("terrain" + std::to_string(i + 1), terrain[i]));
 	}
 	for (int i = 0; i < 30; i++)
@@ -245,8 +248,8 @@ void Map::Initialize()
 	SetSkybox(skybox);
 
 	//	Глобальный свет
-	DirLight* globalLight = new DirLight(glm::vec3(0.0f, -0.3f, -0.9f), glm::vec3(0.25f, 0.15f, 0.15f),
-		glm::vec3(0.9f, 0.8f, 0.8f), glm::vec3(1.0f, 0.8f, 0.8f));
+	DirLight* globalLight = new DirLight(glm::vec3(0.0f, -0.3f, -0.9f), glm::vec3(0.06f, 0.02f, 0.02f),
+		glm::vec3(0.27f, 0.17f, 0.17f), glm::vec3(1.0f, 0.8f, 0.8f));
 	lights.push_back(globalLight);
 
 	//	Установка глобальных параметров
@@ -365,8 +368,11 @@ void Map::QuickCameraSetUp(Camera* camera)
 	}
 }
 
-void Map::Update()
+void Map::Update(float dTime)
 {
+	UpdateObjects(dTime);
+	ActBots(dTime);
+
 	Camera* camera = player->GetModel()->GetCamera();
 	camera->SetFov(45 + glm::length(player->GetSpeed()));
 	camera->UpdateCameraVectors();
