@@ -36,6 +36,6 @@ public:
 	void SetWidth(float width);
 	void SetHeight(float height);
 	static Texture LoadTexture(const std::string& path, bool useSRGB = false);
-	static Texture CreateEmptyTexture(float width, float height, TextureType type = TextureType::COLOR);
+	static Texture CreateEmptyTexture(int width, int height, TextureType type = TextureType::COLOR);
 	static unsigned int LoadCubeMap(const std::vector<std::string>& pathes);
 };

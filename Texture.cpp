@@ -123,7 +123,7 @@ Texture Texture::LoadTexture(const std::string& path, bool useSRGB)
 	return Texture(texture, TextureType::UNDEFINED, path, textureWdth, textureHght, channels);
 }
 
-Texture Texture::CreateEmptyTexture(float width, float height, TextureType type)
+Texture Texture::CreateEmptyTexture(int width, int height, TextureType type)
 {
 	unsigned int texture;
 	

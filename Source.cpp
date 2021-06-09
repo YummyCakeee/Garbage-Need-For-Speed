@@ -163,51 +163,13 @@ void Key_callback(GLFWwindow* win, int key, int scancode, int action, int mods)
 
 int main()
 {
-#pragma region WINDOW INITIALIZATION
-	glfwInit();
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4.5);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 4.5);
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-	GLFWwindow* win = glfwCreateWindow(gameGlob.gameProps.GetWindowWidth(), gameGlob.gameProps.GetWindowHeight(),
-		"Garbage Need For Speed", NULL, NULL);
-	if (win == NULL)
-	{
-		cout << "Не удалось создать окно\n";
-		glfwTerminate();
-		return -1;
-	}
-	glfwMakeContextCurrent(win);
-	if (glewInit() != GLEW_OK)
-	{
-		cout << "Не удалось инициализировать glew\n";
-		glfwTerminate();
-		return -1;
-	}
-
-	glfwSetInputMode(win, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-	glfwSetFramebufferSizeCallback(win, OnResize);
-	glfwSetCursorPosCallback(win, Mouse_callback);
-	glfwSetScrollCallback(win, Scroll_callback);
-	glfwSetKeyCallback(win, Key_callback);
-	glfwSetCursorPos(win, (double)gameGlob.gameProps.GetWindowWidth() / 2.0f, (double)gameGlob.gameProps.GetWindowHeight() / 2.0f);
-	glewExperimental = GL_TRUE;
-	glViewport(0, 0, gameGlob.gameProps.GetWindowWidth(), gameGlob.gameProps.GetWindowHeight());
-#pragma endregion
-
-	srand(time(NULL));
-
-	Shader* screenShader = new Shader("shaders\\screen_shader.vert", "shaders\\screen_shader.frag");
-	//	OWN FRAMEBUFFER
-	ScreenFrameBuffer sfb = ScreenFrameBuffer(gameGlob.gameProps.GetWindowWidth(), gameGlob.gameProps.GetWindowHeight(), screenShader);
-	//	OWN FRAMEBUFFER~
-
-	Map map;
-	map.Initialize();
-	gameGlob.SetMap(&map);
+	glfwSetFramebufferSizeCallback(gameGlob.GetWindow(), OnResize);
+	glfwSetCursorPosCallback(gameGlob.GetWindow(), Mouse_callback);
+	glfwSetScrollCallback(gameGlob.GetWindow(), Scroll_callback);
+	glfwSetKeyCallback(gameGlob.GetWindow(), Key_callback);
 	double oldTime = glfwGetTime(), newTime;
 	//	Игровой цикл
-	while (!glfwWindowShouldClose(win))
+	while (!glfwWindowShouldClose(gameGlob.GetWindow()))
 	{
 		newTime = glfwGetTime();
 		gameGlob.SetDeltaTime(newTime - oldTime);
@@ -215,14 +177,10 @@ int main()
 		glfwPollEvents();
 		gameGlob.ProcessInput();
 		gameGlob.GetMap()->Update(gameGlob.GetDeltaTime());
-		sfb.Bind();
-		sfb.PrepareForRender();
 		gameGlob.GetMap()->Render();
-		sfb.Render();
-		glfwSwapBuffers(win);
+		glfwSwapBuffers(gameGlob.GetWindow());
 	}
 	gameGlob.GetMap()->Clear();
-	delete screenShader;
 
 	glfwTerminate();
 	return 0;

@@ -1,4 +1,6 @@
 #pragma once
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
 #include <vector>
 #include <fstream>
 #include <filesystem>
@@ -6,17 +8,21 @@
 #include <time.h>
 #include <map>
 #include <string>
+#include <tinyxml2/tinyxml2.h>
 #include "Object.h"
 #include "LightSource.h"
 #include "Camera.h"
 #include "Bot.h"
 #include "Shader.h"
 #include "ParticleSystem.h"
-#include <tinyxml2/tinyxml2.h>
+#include "GameGlobal.h"
+
+class GameGlobal;
 
 class Map
 {
 private:
+	const GameGlobal* game;
 	std::vector<Object*> objects;
 	std::vector<Bot*> bots;
 	std::vector<Object*> roadObjects;
@@ -24,7 +30,6 @@ private:
 	LightsUBO lightsUbo;
 	std::vector<const LightSource*> activeLights;
 	std::map<std::string, Model*> models;
-	std::map<std::string, Shader*> shaders;
 	unsigned int botsCount;
 	unsigned int treesCount;
 	Object* player = NULL;
@@ -35,7 +40,7 @@ private:
 	void UpdateObjects(double dTime);
 	void ActBots(double dTime);
 public:
-	Map();
+	Map(const GameGlobal& gameGlob);
 	Object* GetPlayer();
 	std::vector<Object*>& GetObjects();
 	Camera* GetCamera();

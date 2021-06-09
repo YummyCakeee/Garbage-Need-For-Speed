@@ -1,7 +1,8 @@
 #include "Map.h"
 
-Map::Map()
+Map::Map(const GameGlobal& gameGlob)
 {
+	game = &gameGlob;
 	LoadGameProps();
 	treesCount = 100;
 	botsCount = 15;
@@ -74,17 +75,6 @@ bool cmp(const std::pair<float, int>& a,
 
 void Map::Initialize()
 {
-	srand(time(NULL));
-	Shader* standartShader = new Shader("shaders\\standart_shader.vert", "shaders\\standart_shader.frag");
-	shaders.insert(std::make_pair("standart", standartShader));
-	Shader* lampShader = new Shader("shaders\\lamp_shader.vert", "shaders\\lamp_shader.frag");
-	shaders.insert(std::make_pair("lamp", lampShader));
-	Shader* skyboxShader = new Shader("shaders\\skybox_shader.vert", "shaders\\skybox_shader.frag");
-	shaders.insert(std::make_pair("skybox", skyboxShader));
-	Shader* raindropShader = new Shader("shaders\\raindrop_shader.vert", "shaders\\raindrop_shader.frag");
-	shaders.insert(std::make_pair("raindrop", raindropShader));
-	Shader* screenShader = new Shader("shaders\\screen_shader.vert", "shaders\\screen_shader.frag");
-	shaders.insert(std::make_pair("screen", screenShader));
 	CameraTPM* camera = new CameraTPM(glm::vec3(0.0f, 0.0f, 2.0f));
 	SetCamera(camera);
 	//	Создание дороги
@@ -94,7 +84,7 @@ void Map::Initialize()
 	roadTextures.push_back(Texture(0, TextureType::Specular, "textures/road/asphalt_road_wet_S.png"));
 	Model* roadModel = Model::CreatePlane(7.0f, 7.0f, "road_section", &roadTextures, true);
 	models.insert(std::make_pair("road_section", roadModel));
-	roadModel->SetGlobalShader(standartShader);
+	roadModel->SetGlobalShader(game->shaders.find("standart")->second);
 	roadModel->SetCamera(camera);
 	Model* terrain[3] = {
 		new Model(std::filesystem::canonical("models/Road Objects/terrain").string(), "terrain.obj", camera, glm::vec3(0.0f, 0.0f, -1.0f)) ,
@@ -103,7 +93,7 @@ void Map::Initialize()
 	};
 	for (int i = 0; i < 3; i++)
 	{
-		terrain[i]->SetGlobalShader(standartShader);
+		terrain[i]->SetGlobalShader(game->shaders.find("standart")->second);
 		terrain[i]->SetCamera(camera);
 		Material* mat = terrain[i]->GetMesh(0)->GetMaterial();
 		mat->SetProperty(MaterialProp::REFLECTIVITY, 0.0f);
@@ -126,7 +116,7 @@ void Map::Initialize()
 	Model* StreetLightModel = new Model(std::filesystem::canonical("models/Road Objects/Street Light 5").string(),
 		"street_light.obj", camera, glm::vec3(0.0f, 0.0f, -1.0f));
 	StreetLightModel->SetScale(glm::vec3(0.085f));
-	StreetLightModel->SetGlobalShader(standartShader);
+	StreetLightModel->SetGlobalShader(game->shaders.find("standart")->second);
 	models.insert(std::make_pair("street_light", StreetLightModel));
 	for (int i = 0; i < 16; i++)
 	{
@@ -165,7 +155,7 @@ void Map::Initialize()
 	trees[1]->SetScale(glm::vec3(0.01f));
 	for (int i = 0; i < 2; i++)
 	{
-		trees[i]->SetGlobalShader(standartShader);
+		trees[i]->SetGlobalShader(game->shaders.find("standart")->second);
 		trees[i]->SetCamera(camera);
 		models.insert(std::make_pair("tree" + std::to_string(i + 1), trees[i]));
 	}
@@ -195,7 +185,7 @@ void Map::Initialize()
 	lights.push_back(lightRight);
 	car->BindLightSource("headlight_right", lightRight);
 	Model* carModel = new Model(std::filesystem::canonical("models/2107").string(), "2107.obj", camera, glm::vec3(0.0f, 0.0f, -1.0f));
-	carModel->SetGlobalShader(standartShader);
+	carModel->SetGlobalShader(game->shaders.find("standart")->second);
 	carModel->SetScale(glm::vec3(0.45f));
 	models.insert(std::make_pair("vaz_2107", carModel));
 	car->SetModel(carModel);
@@ -210,13 +200,13 @@ void Map::Initialize()
 		new Model(std::filesystem::canonical("models/Nissan 240SX").string(), "240sx.obj", camera, glm::vec3(0.0f, 0.0f, 1.0f))
 	};
 
-	botModels[0]->SetGlobalShader(standartShader);
+	botModels[0]->SetGlobalShader(game->shaders.find("standart")->second);
 	botModels[0]->SetScale(glm::vec3(0.52f));
 	models.insert(std::make_pair("volkswagen", botModels[0]));
-	botModels[1]->SetGlobalShader(standartShader);
+	botModels[1]->SetGlobalShader(game->shaders.find("standart")->second);
 	botModels[1]->SetScale(glm::vec3(0.83f));
 	models.insert(std::make_pair("camry", botModels[1]));
-	botModels[2]->SetGlobalShader(standartShader);
+	botModels[2]->SetGlobalShader(game->shaders.find("standart")->second);
 	botModels[2]->SetScale(glm::vec3(0.55f));
 	models.insert(std::make_pair("nissan", botModels[2]));
 	for (int i = 0; i < botsCount; i++)
@@ -240,7 +230,7 @@ void Map::Initialize()
 	};
 	Model* skyboxModel = Model::CreateSkybox(faces);
 	models.insert(std::make_pair("skybox", skyboxModel));
-	skyboxModel->SetGlobalShader(skyboxShader);
+	skyboxModel->SetGlobalShader(game->shaders.find("skybox")->second);
 	skyboxModel->SetCamera(camera);
 	Object* skybox = new Object();
 	skybox->SetModel(skyboxModel);
@@ -261,7 +251,7 @@ void Map::Initialize()
 	ps->SetParticlesAcceleration(glm::vec3(0.0f, -0.2f, 0.0f));
 	Model* rainDrop = new Model(std::filesystem::canonical("models/Other/raindrop").string(),
 		"raindrop.obj", camera, glm::vec3(1.0f, 0.0f, 0.0f));
-	rainDrop->SetGlobalShader(raindropShader);
+	rainDrop->SetGlobalShader(game->shaders.find("raindrop")->second);
 	rainDrop->SetCamera(camera);
 	rainDrop->GetMesh(0)->GetTextures().push_back(skybox->GetModel()->GetMesh(0)->GetTextures()[0]);
 	rainDrop->GetMesh(0)->GetMaterial()->SetProperty(MaterialProp::ALPHA, 0.4f);
@@ -273,7 +263,7 @@ void Map::Initialize()
 	AddObject(ps);
 
 	//	Юниформ-буффер источников света
-	lightsUbo = LightsUBO(*standartShader, 1, 4, 10);
+	lightsUbo = LightsUBO(*(game->shaders.find("standart")->second), 1, 4, 10);
 
 
 	for (int j = 0; j < objects.size(); j++)
@@ -352,12 +342,15 @@ void Map::ActBots(double dTime)
 }
 
 void Map::Render()
-{
+{	
+	game->screenBuffer->Bind();
+	game->screenBuffer->PrepareForRender();
 	RenderSkybox();
 	for (int i = 0; i < objects.size(); i++)
 	{
 		objects[i]->Draw();
 	}
+	game->screenBuffer->Render();
 }
 
 void Map::QuickCameraSetUp(Camera* camera)
@@ -472,10 +465,4 @@ void Map::Clear()
 		delete lights[i];
 	}
 	lights.clear();
-	//	Shaders clearing
-	for (auto it = shaders.begin(); it != shaders.end(); it++)
-	{
-		delete it->second;
-	}
-	shaders.clear();
 }

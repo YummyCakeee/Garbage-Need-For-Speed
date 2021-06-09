@@ -1,6 +1,6 @@
 #include "FrameBuffer.h"
 
-FrameBuffer::FrameBuffer(float width, float height, const Shader* shader)
+FrameBuffer::FrameBuffer(int width, int height, const Shader* shader)
 {
 	glGenFramebuffers(1, &id);
 	this->width = width;
@@ -53,6 +53,11 @@ void FrameBuffer::Unbind()
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
+void FrameBuffer::SetShader(const Shader* shader)
+{
+	this->shader = shader;
+}
+
 void FrameBuffer::Render()
 {
 	if (shader == NULL)
@@ -72,7 +77,7 @@ void FrameBuffer::Render()
 
 }
 
-ScreenFrameBuffer::ScreenFrameBuffer(float width, float height, const Shader* shader) : FrameBuffer(width, height, shader)
+ScreenFrameBuffer::ScreenFrameBuffer(int width, int height, const Shader* shader) : FrameBuffer(width, height, shader)
 {
 	SetupBuffer();
 }

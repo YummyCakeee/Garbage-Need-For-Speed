@@ -8,19 +8,21 @@ class FrameBuffer
 {
 protected:
 	unsigned int id;
-	float width;
-	float height;
+	int width;
+	int height;
 	Texture texture;
 	const Shader* shader;
 	unsigned int sfVAO, sfVBO;
-	FrameBuffer(float width, float height, const Shader* shader = NULL);
+	FrameBuffer(int width, int height, const Shader* shader = NULL);
 	virtual void SetupBuffer() = 0;
 	void InitScreenField();
 public:
+	FrameBuffer() = delete;
 	~FrameBuffer();
 	unsigned int ID();
 	void Bind();
 	void Unbind();
+	void SetShader(const Shader* shader);
 	virtual void PrepareForRender() = 0;
 	void Render();
 };
@@ -31,7 +33,7 @@ private:
 	unsigned int renderBuffer;
 	void SetupBuffer() override;
 public:
-	ScreenFrameBuffer(float width, float height, const Shader* shader = NULL);
+	ScreenFrameBuffer(int width, int height, const Shader* shader = NULL);
 	~ScreenFrameBuffer();
 	void PrepareForRender() override;
 

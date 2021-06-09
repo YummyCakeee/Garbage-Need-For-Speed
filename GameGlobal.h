@@ -1,19 +1,30 @@
 #pragma once
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 #include <vector>
+#include <map>
 #include "Object.h"
 #include "GameGlobalStructs.h"
 #include "Map.h"
+#include "FrameBuffer.h"
+#include "Shader.h"
+
+class Map;
 
 class GameGlobal
 {
 private:
+	friend class Map;
+	GLFWwindow* window;
 	double dTime;
 	double timeCoef;
 	std::vector<Key> keys;
 	void InitKeys();
-	Map* map = NULL;
+	Map* map;
+	ScreenFrameBuffer* screenBuffer;
+	std::map<std::string, Shader*> shaders;
 	class GameProperties
 	{
 	private:
@@ -30,25 +41,29 @@ private:
 		void SetWindowSize(int width, int height);
 		void EnableGammaCorrection(bool enable);
 		void SetGammaCorrectionValue(float value);
-		glm::ivec2 GetWindowSize();
-		int GetWindowWidth();
-		int GetWindowHeight();
-		bool IsGammaCorrectionEnabled();
+		glm::ivec2 GetWindowSize() const;
+		int GetWindowWidth() const;
+		int GetWindowHeight() const;
+		bool IsGammaCorrectionEnabled() const;
 	};
+	void Initialize();
+	bool InitOpenGL();
 public:
 	GameProperties gameProps;
 	Mouse mouse;
 	GameGlobal();
 	GameGlobal(double dTime, glm::ivec2 windowSize);
 	GameGlobal(double dTime, int windowWidth, int windowHeight);
+	~GameGlobal();
 	void SetDeltaTime(double dTime);
 	void SetKeyState(KeysEnum key, KeyState state);
 	void SetPlayer(Object* player);
 	void SetMap(Map* map);
 	void SetTimeCoef(double coefficient);
 	void ChangeTimeCoef(double changingValue);
-	double GetDeltaTime();
+	double GetDeltaTime() const;
 	Map* GetMap();
+	GLFWwindow* GetWindow();
 	void ProcessInput();
 };
 
