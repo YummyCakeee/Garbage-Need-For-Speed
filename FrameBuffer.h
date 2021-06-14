@@ -36,6 +36,14 @@ public:
 	ScreenFrameBuffer(int width, int height, const Shader* shader = NULL);
 	~ScreenFrameBuffer();
 	void PrepareForRender() override;
+};
 
-
+class DepthFrameBuffer : public FrameBuffer
+{
+private:
+	void SetupBuffer() override;
+public:
+	DepthFrameBuffer(int width, int height, const Shader* shader = NULL);
+	~DepthFrameBuffer();
+	void PrepareForRender() override;
 };

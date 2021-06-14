@@ -2,10 +2,7 @@
 #include <GLFW/glfw3.h>
 #include <iostream>
 #include <time.h>
-#include "Shader.h"
 #include "GameGlobal.h"
-#include "GameGlobalStructs.h"
-#include "FrameBuffer.h"
 
 
 using namespace std;

@@ -65,6 +65,11 @@ SourceType LightSource::GetType() const
 	return type;
 }
 
+glm::mat4 LightSource::GetProjectionMatrix() const
+{
+	return glm::mat4(1.0f);
+}
+
 bool LightSource::IsEnabled() const
 {
 	return enabled;
@@ -257,6 +262,16 @@ void DirLight::SetDirection(glm::vec3 direction)
 glm::vec3 DirLight::GetDirection() const
 {
 	return direction;
+}
+
+glm::mat4 DirLight::GetProjectionMatrix() const
+{
+	return glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 1.0f, 7.5f);
+}
+
+glm::mat4 DirLight::GetViewMatrix() const
+{
+	return glm::lookAt(glm::vec3(0.0f), direction, glm::vec3(0.0f, 1.0f, 0.0f));
 }
 
 //	SpotLight

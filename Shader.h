@@ -20,15 +20,20 @@ public:
 	~SceneInfo();
 };
 
+enum class ShaderType
+{
+	MATERIAL, SHADOW_MAP, SCREEN
+};
+
 class Shader
 {
-private:
-	const Camera* camera;
-	const glm::mat4* modelMatrix;
-	void loadCameraAndModelMatrix(const Camera* camera = NULL, const glm::mat4* modelMatrix = NULL) const;
+protected:
+	unsigned int programID;
+	ShaderType type;
+	Shader(ShaderType type, const char* vertexPath, const char* fragmentPath, const char* geometryPath = NULL);
 	std::string readShaderFromFile(const char* path);
+	void checkCompileErrors(unsigned int shader, std::string type);
 public:
-	Shader(const char* vertexPath, const char* fragmentPath, const char* geometryPath = NULL);
 	~Shader();
 	void use() const;
 	void free();
@@ -42,13 +47,33 @@ public:
 	void setVec(const std::string& name, glm::vec3 vector) const;
 	void setVec(const std::string& name, glm::vec4 vector) const;
 	void setMatrix4F(const std::string& name, glm::mat4& m) const;
+	ShaderType GetType() const;
+	unsigned int ID() const;
+};
+
+class MaterialShader : public Shader
+{
+private:
+	const Camera* camera;
+	const glm::mat4* modelMatrix;
+	void loadCameraAndModelMatrix(const Camera* camera = NULL, const glm::mat4* modelMatrix = NULL) const;
+public:
+	MaterialShader(ShaderType type, const char* vertexPath, const char* fragmentPath, const char* geometryPath = NULL);
+	~MaterialShader();
 	void loadMainInfo(const Camera* camera = NULL, const glm::mat4* modelMatrix = NULL) const;
 	void setCameraAndModelMatrix(const Camera* camera, const glm::mat4* modelMatrix);
-	unsigned int ID() const;
+};
 
+class ShadowMapShader : public Shader
+{
 private:
-	unsigned int programID;
-	void checkCompileErrors(unsigned int shader, std::string type);
+	const glm::mat4* lightSpaceMatrix;
+	const glm::mat4* modelMatrix;
+public:
+	ShadowMapShader(ShaderType type, const char* vertexPath, const char* fragmentPath, const char* geometryPath = NULL);
+	~ShadowMapShader();
+	void loadMainInfo(const glm::mat4* lightSpaceMatrix = NULL, const glm::mat4* modelMatrix = NULL) const;
+	void setLightSpaceAndModelMatrix(const glm::mat4* lightSpaceMatrix, const glm::mat4* modelMatrix);
 };
 
 class LightsUBO

@@ -237,7 +237,7 @@ void ParticleSystem::Update(double dTime)
 	}
 }
 
-void ParticleSystem::Draw()
+void ParticleSystem::Draw(const Shader* shader)
 {
 	if (model != NULL)
 	{

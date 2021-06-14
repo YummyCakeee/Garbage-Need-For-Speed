@@ -19,8 +19,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <None Include="shaders\lamp_shader.frag" />
-    <None Include="shaders\lamp_shader.vert" />
+    <None Include="shaders\depth_shader.frag" />
+    <None Include="shaders\depth_shader.vert" />
     <None Include="shaders\raindrop_shader.frag" />
     <None Include="shaders\raindrop_shader.vert" />
     <None Include="shaders\screen_shader.frag" />

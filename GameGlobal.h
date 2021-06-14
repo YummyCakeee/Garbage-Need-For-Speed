@@ -24,6 +24,7 @@ private:
 	void InitKeys();
 	Map* map;
 	ScreenFrameBuffer* screenBuffer;
+	DepthFrameBuffer* depthBuffer;
 	std::map<std::string, Shader*> shaders;
 	class GameProperties
 	{

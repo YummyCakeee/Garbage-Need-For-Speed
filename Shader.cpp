@@ -13,8 +13,9 @@ unsigned int Shader::ID() const
 	return programID;
 }
 
-Shader::Shader(const char* vertexPath, const char* fragmentPath, const char* geometryPath)
+Shader::Shader(ShaderType type, const char* vertexPath, const char* fragmentPath, const char* geometryPath)
 {
+	this->type = type;
 	const char* vShaderCode;
 	const char* fShaderCode;
 	const char* gShaderCode;
@@ -71,8 +72,6 @@ Shader::Shader(const char* vertexPath, const char* fragmentPath, const char* geo
 	glDeleteShader(fragment);
 	if (geometryPath != NULL)
 		glDeleteShader(geometry);
-	camera = NULL;
-	modelMatrix = NULL;
 }
 
 Shader::~Shader()
@@ -155,48 +154,9 @@ void Shader::setMatrix4F(const std::string& name, glm::mat4& m) const
 	glUniformMatrix4fv(glGetUniformLocation(programID, name.c_str()), 1, GL_FALSE, glm::value_ptr(m));
 }
 
-void Shader::loadCameraAndModelMatrix(const Camera* camera, const glm::mat4* modelMatrix) const
+ShaderType Shader::GetType() const
 {
-	const Camera* cam = this->camera;
-	if (camera != NULL) cam = camera;
-	glm::mat4 projection = glm::mat4(1.0f);
-	glm::mat4 view = glm::mat4(1.0f);
-	if (cam != NULL)
-	{
-		setVec("viewPos", cam->GetPosition());
-		projection = cam->GetProjectionMatrix();
-		view = cam->GetViewMatrix();
-	}
-	else
-	{
-		std::cout << "WARNING:: No camera set to object which is using shader ID: " << programID << std::endl;
-		setVec("viewPos", glm::vec3(0.0f));
-	}
-	const glm::mat4* modelMat = this->modelMatrix;
-	if (modelMatrix != NULL) modelMat = modelMatrix;
-	glm::mat4 model;
-	if (modelMat == NULL)
-	{
-		model = glm::mat4(1.0f);
-		std::cout << "WARNING: No model matrix set to object which is using shader ID: " << programID << std::endl;
-	}
-	else model = *modelMat;
-	glm::mat4 finalMatrix = projection * view * model;
-	setMatrix4F("finalMatrix", finalMatrix);
-	setMatrix4F("model", model);
-	glm::mat4 normalMatrix = glm::transpose(glm::inverse(model));
-	setMatrix4F("normalMatrix", normalMatrix);
-}
-
-void Shader::loadMainInfo(const Camera* camera, const glm::mat4* modelMatrix) const
-{
-	loadCameraAndModelMatrix(camera, modelMatrix);
-}
-
-void Shader::setCameraAndModelMatrix(const Camera* camera, const glm::mat4* modelMatrix)
-{
-	this->camera = camera;
-	this->modelMatrix = modelMatrix;
+	return type;
 }
 
 void Shader::checkCompileErrors(unsigned int shader, std::string type)
@@ -221,6 +181,82 @@ void Shader::checkCompileErrors(unsigned int shader, std::string type)
 			std::cout << "ERROR::PROGRAM_LINKING_ERROR of type: " << type << '\n' << infoLog << "\n -- -------------";
 		}
 	}
+}
+
+MaterialShader::MaterialShader(ShaderType type, const char* vertexPath, const char* fragmentPath, const char* geometryPath) :
+	Shader(type, vertexPath, fragmentPath, geometryPath)
+{
+	camera = NULL;
+	modelMatrix = NULL;
+}
+
+MaterialShader::~MaterialShader()
+{
+}
+
+void MaterialShader::loadCameraAndModelMatrix(const Camera* camera, const glm::mat4* modelMatrix) const
+{
+	const Camera* cam = this->camera;
+	if (camera != NULL) cam = camera;
+	glm::mat4 projection = glm::mat4(1.0f);
+	glm::mat4 view = glm::mat4(1.0f);
+	if (cam != NULL)
+	{
+		setVec("viewPos", cam->GetPosition());
+		projection = cam->GetProjectionMatrix();
+		view = cam->GetViewMatrix();
+	}
+	else
+	{
+		std::cout << "WARNING:: No camera set to object which is using shader ID: " << programID << std::endl;
+		setVec("viewPos", glm::vec3(0.0f));
+	}
+	const glm::mat4* modelMat = this->modelMatrix;
+	if (modelMatrix != NULL) modelMat = modelMatrix;
+	glm::mat4 model;
+	if (modelMat == NULL)
+
+	{
+		model = glm::mat4(1.0f);
+		std::cout << "WARNING: No model matrix set to object which is using shader ID: " << programID << std::endl;
+	}
+	else model = *modelMat;
+	glm::mat4 finalMatrix = projection * view * model;
+	setMatrix4F("finalMatrix", finalMatrix);
+	setMatrix4F("model", model);
+	glm::mat4 normalMatrix = glm::transpose(glm::inverse(model));
+	setMatrix4F("normalMatrix", normalMatrix);
+}
+
+void MaterialShader::setCameraAndModelMatrix(const Camera* camera, const glm::mat4* modelMatrix)
+{
+	this->camera = camera;
+	this->modelMatrix = modelMatrix;
+}
+void MaterialShader::loadMainInfo(const Camera* camera, const glm::mat4* modelMatrix) const
+{
+	loadCameraAndModelMatrix(camera, modelMatrix);
+}
+
+ShadowMapShader::ShadowMapShader(ShaderType type, const char* vertexPath, const char* fragmentPath, const char* geometryPath) :
+	Shader(type, vertexPath, fragmentPath, geometryPath)
+{
+	lightSpaceMatrix = NULL;
+	modelMatrix = NULL;
+}
+
+ShadowMapShader::~ShadowMapShader()
+{
+}
+
+void ShadowMapShader::loadMainInfo(const glm::mat4* lightSpaceMatrix, const glm::mat4* modelMatrix) const
+{
+
+}
+
+void ShadowMapShader::setLightSpaceAndModelMatrix(const glm::mat4* lightSpaceMatrix, const glm::mat4* modelMatrix)
+{
+
 }
 
 LightsUBO::LightsUBO()

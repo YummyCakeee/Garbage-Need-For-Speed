@@ -221,12 +221,14 @@ MovingLight* Object::GetLightSource(const std::string& name)
 	return lights.find(name)->second;
 }
 
-void Object::Draw()
+void Object::Draw(const Shader* shader)
 {
 	if (model != NULL)
 	{
 		UpdateModelProps();
-		model->Draw();
+		if (shader == NULL)
+			model->Draw();
+		else model->Draw(*shader);
 	}
 	else
 	{

@@ -74,7 +74,6 @@ void FrameBuffer::Render()
 	glBindVertexArray(sfVAO);
 	glBindTexture(GL_TEXTURE_2D, texture.GetId());
 	glDrawArrays(GL_TRIANGLES, 0, 6);
-
 }
 
 ScreenFrameBuffer::ScreenFrameBuffer(int width, int height, const Shader* shader) : FrameBuffer(width, height, shader)
@@ -103,11 +102,12 @@ void ScreenFrameBuffer::SetupBuffer()
 	{
 		std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete" << std::endl;
 	}
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	Unbind();
 }
 
 void ScreenFrameBuffer::PrepareForRender()
 {
+	glViewport(0, 0, width, height);
 	Bind();
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -117,3 +117,28 @@ void ScreenFrameBuffer::PrepareForRender()
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
+DepthFrameBuffer::DepthFrameBuffer(int width, int height, const Shader* shader) : FrameBuffer(width, height, shader)
+{
+	SetupBuffer();
+}
+
+DepthFrameBuffer::~DepthFrameBuffer()
+{
+}
+
+void DepthFrameBuffer::SetupBuffer()
+{
+	Bind();
+	texture = Texture::CreateEmptyTexture(width, height, TextureType::DEPTH);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, texture.GetId(), 0);
+	glDrawBuffer(GL_NONE);
+	glReadBuffer(GL_NONE);
+	Unbind();
+}
+
+void DepthFrameBuffer::PrepareForRender()
+{
+	glViewport(0, 0, width, height);
+	Bind();
+	glClear(GL_DEPTH_BUFFER_BIT);
+}

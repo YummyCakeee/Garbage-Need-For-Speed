@@ -67,12 +67,6 @@ Object* Map::GetPlayer()
 	return player;
 }
 
-bool cmp(const std::pair<float, int>& a,
-	const std::pair<float, int>& b)
-{
-	return a.second < b.second;
-}
-
 void Map::Initialize()
 {
 	CameraTPM* camera = new CameraTPM(glm::vec3(0.0f, 0.0f, 2.0f));
@@ -343,13 +337,18 @@ void Map::ActBots(double dTime)
 
 void Map::Render()
 {	
+
+	//	Привязка экранного кадрового буфера
 	game->screenBuffer->Bind();
 	game->screenBuffer->PrepareForRender();
+	//	Отрисовка скайбокса
+	ShadowMapShader* shader = (ShadowMapShader*)(game->shaders.find("depth")->second);
 	RenderSkybox();
 	for (int i = 0; i < objects.size(); i++)
 	{
 		objects[i]->Draw();
 	}
+	//	Вывод экранного буфера на экран
 	game->screenBuffer->Render();
 }
 
@@ -435,8 +434,14 @@ void Map::Update(float dTime)
 			}
 		}
 	}
+
+	auto cmp = [](const std::pair<float, int>& a,
+		const std::pair<float, int>& b)
+	{
+		return a.second < b.second;
+	};
+
 	lightsDistances.sort(cmp);
-	//std::sort(lightsDistances.begin(), lightsDistances.end(), cmp);
 
 	for (auto it = lightsDistances.begin(); it != lightsDistances.end(); it++)
 	{

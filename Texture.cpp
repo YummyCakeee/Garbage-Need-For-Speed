@@ -10,7 +10,7 @@ Texture::Texture()
 	height = 0.0f;
 }
 
-Texture::Texture(unsigned int id, TextureType type, const std::string& path, float width, float height, int channelsCount)
+Texture::Texture(unsigned int id, TextureType type, const std::string& path, int width, int height, int channelsCount)
 {
 	this->id = id;
 	this->type = type;
@@ -60,19 +60,19 @@ void Texture::SetPath(const std::string& path)
 	this->path = path;
 }
 
-void Texture::SetSize(float width, float height)
+void Texture::SetSize(int width, int height)
 {
 	SetWidth(width);
 	SetHeight(height);
 }
 
-void Texture::SetWidth(float width)
+void Texture::SetWidth(int width)
 {
 	if (width < 0.0f) this->width = 0.0f;
 	else this->width = width;
 }
 
-void Texture::SetHeight(float height)
+void Texture::SetHeight(int height)
 {
 	if (height < 0.0f) this->height = 0.0f;
 	else this->height = height;

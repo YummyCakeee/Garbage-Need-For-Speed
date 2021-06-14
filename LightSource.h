@@ -1,6 +1,7 @@
 #pragma once
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 enum class SourceType
 {
@@ -27,6 +28,7 @@ public:
 	glm::vec3 GetDiffuse() const;
 	glm::vec3 GetSpecular() const;
 	SourceType GetType() const;
+	virtual glm::mat4 GetProjectionMatrix() const;
 	bool IsEnabled() const;
 	virtual void Update() const;
 };
@@ -82,6 +84,8 @@ public:
 	DirLight(glm::vec3 direction, glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular);
 	void SetDirection(glm::vec3 direction);
 	glm::vec3 GetDirection() const;
+	glm::mat4 GetProjectionMatrix() const override;
+	glm::mat4 GetViewMatrix() const;
 };
 
 class SpotLight : public MovingLight
@@ -108,5 +112,3 @@ public:
 	float GetCutOff() const;
 	float GetOuterCutOff() const;
 };
-
-

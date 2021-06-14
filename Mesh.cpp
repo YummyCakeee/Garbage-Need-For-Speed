@@ -225,92 +225,108 @@ void Mesh::Draw(const Shader& shader)
 	unsigned int normalN = 1;
 	unsigned int heightN = 1;
 	shader.use();
+	//	Обновление модельной матрицы меша
 	UpdateModelMatrix();
 	glm::mat4 modelMat = root->GetModelMatrix();
 	for (const Mesh* mesh = this; mesh != NULL; mesh = mesh->parent)
 	{
 		modelMat = modelMat * mesh->model;
 	}
-	shader.loadMainInfo(root->GetCamera(), &modelMat);
-	shader.setBool("hasSkybox", false);
-	for (unsigned int i = 0; i < textures.size(); i++)
+	//	Установка свойств для шейдера
+	switch (shader.GetType())
 	{
-		std::string name = "material.";
-		switch (textures[i].GetType())
+	case ShaderType::MATERIAL:
+	{
+		const MaterialShader* matShader = (const MaterialShader*)(&shader);
+		matShader->loadMainInfo(root->GetCamera(), &modelMat);
+		matShader->setBool("hasSkybox", false);
+		for (unsigned int i = 0; i < textures.size(); i++)
 		{
-		case TextureType::Diffuse:
-			name += "texture_diffuse" + std::to_string(diffuseN++);
-			break;
-		case TextureType::Specular:
-			name += "texture_specular" + std::to_string(specularN++);
-			break;
-		case TextureType::Normal:
-			name += "texture_normal" + std::to_string(normalN++);
-			break;
-		case TextureType::Height:
-			name += "texture_height" + std::to_string(heightN++);
-			break;
-		case TextureType::CubeMap:
-			name = "skybox";
-			shader.setBool("hasSkybox", true);
-			break;
-		default: continue;
+			std::string name = "material.";
+			switch (textures[i].GetType())
+			{
+			case TextureType::Diffuse:
+				name += "texture_diffuse" + std::to_string(diffuseN++);
+				break;
+			case TextureType::Specular:
+				name += "texture_specular" + std::to_string(specularN++);
+				break;
+			case TextureType::Normal:
+				name += "texture_normal" + std::to_string(normalN++);
+				break;
+			case TextureType::Height:
+				name += "texture_height" + std::to_string(heightN++);
+				break;
+			case TextureType::CubeMap:
+				name = "skybox";
+				matShader->setBool("hasSkybox", true);
+				break;
+			default: continue;
+			}
+			matShader->setInt(name, i);
+			glActiveTexture(GL_TEXTURE0 + i);
+			if (textures[i].GetType() == TextureType::CubeMap)
+			{
+				glBindTexture(GL_TEXTURE_CUBE_MAP, textures[i].GetId());
+			}
+			else
+			{
+				glBindTexture(GL_TEXTURE_2D, textures[i].GetId());
+			}
 		}
-		shader.setInt(name, i);
-		glActiveTexture(GL_TEXTURE0 + i);
-		if (textures[i].GetType() == TextureType::CubeMap)
-		{
-			glBindTexture(GL_TEXTURE_CUBE_MAP, textures[i].GetId());
-		}
-		else
-		{
-			glBindTexture(GL_TEXTURE_2D, textures[i].GetId());
-		}
-	}
-	shader.setInt("material.diffTextCount", diffuseN - 1);
-	shader.setInt("material.specTextCount", specularN - 1);
-	shader.setInt("material.ambTextCount", heightN - 1);
-	shader.setVec("material.diffuse", material.GetColor(MaterialType::DIFFUSE));
-	shader.setVec("material.ambient", material.GetColor(MaterialType::AMBIENT));
-	shader.setVec("material.specular", material.GetColor(MaterialType::SPECULAR));
-	shader.setFloat("material.shininess", material.GetProperty(MaterialProp::SHININESS));
-	shader.setFloat("material.alpha", material.GetProperty(MaterialProp::ALPHA));
-	shader.setFloat("material.reflectivity", material.GetProperty(MaterialProp::REFLECTIVITY));
-	glBindVertexArray(VAO);
-	glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
-	glBindVertexArray(0);
-	glActiveTexture(GL_TEXTURE0);
+		matShader->setInt("material.diffTextCount", diffuseN - 1);
+		matShader->setInt("material.specTextCount", specularN - 1);
+		matShader->setInt("material.ambTextCount", heightN - 1);
+		matShader->setVec("material.diffuse", material.GetColor(MaterialType::DIFFUSE));
+		matShader->setVec("material.ambient", material.GetColor(MaterialType::AMBIENT));
+		matShader->setVec("material.specular", material.GetColor(MaterialType::SPECULAR));
+		matShader->setFloat("material.shininess", material.GetProperty(MaterialProp::SHININESS));
+		matShader->setFloat("material.alpha", material.GetProperty(MaterialProp::ALPHA));
+		matShader->setFloat("material.reflectivity", material.GetProperty(MaterialProp::REFLECTIVITY));
+		
+		glBindVertexArray(VAO);
+		glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
+		glActiveTexture(GL_TEXTURE0);
 
-	diffuseN = 1;
-	specularN = 1;
-	normalN = 1;
-	heightN = 1;
-	shader.setBool("hasSkybox", false);
-	for (unsigned int i = 0; i < textures.size(); i++)
-	{
-		std::string name = "material.";
-		switch (textures[i].GetType())
+		diffuseN = 1;
+		specularN = 1;
+		normalN = 1;
+		heightN = 1;
+		matShader->setBool("hasSkybox", false);
+		for (unsigned int i = 0; i < textures.size(); i++)
 		{
-		case TextureType::Diffuse:
-			name += "texture_diffuse" + std::to_string(diffuseN++);
-			break;
-		case TextureType::Specular:
-			name += "texture_specular" + std::to_string(specularN++);
-			break;
-		case TextureType::Normal:
-			name += "texture_normal" + std::to_string(normalN++);
-			break;
-		case TextureType::Height:
-			name += "texture_height" + std::to_string(heightN++);
-			break;
-		case TextureType::CubeMap:
-			name = "skybox";
-			shader.setInt(name, 14);
-			continue;
-			break;
-		default: continue;
+			std::string name = "material.";
+			switch (textures[i].GetType())
+			{
+			case TextureType::Diffuse:
+				name += "texture_diffuse" + std::to_string(diffuseN++);
+				break;
+			case TextureType::Specular:
+				name += "texture_specular" + std::to_string(specularN++);
+				break;
+			case TextureType::Normal:
+				name += "texture_normal" + std::to_string(normalN++);
+				break;
+			case TextureType::Height:
+				name += "texture_height" + std::to_string(heightN++);
+				break;
+			case TextureType::CubeMap:
+				name = "skybox";
+				matShader->setInt(name, 14);
+				continue;
+				break;
+			default: continue;
+			}
+			matShader->setInt(name, 15);
 		}
-		shader.setInt(name, 15);
+	}; break;
+	case ShaderType::SHADOW_MAP:
+	{
+		const ShadowMapShader* matShader = (const ShadowMapShader*)(&shader);
+
+	}; break;
+	default: break;
 	}
 }
 

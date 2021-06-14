@@ -53,7 +53,7 @@ public:
 	void UnbindAllLightSources();
 	void UpdateLightsPositions();
 	void UpdateVectors();
-	virtual void Draw();
+	virtual void Draw(const Shader* shader = NULL);
 	virtual void ProcessInput(const std::vector<Key>& keys, Mouse& mouse, double dTime);
 	virtual void Update(double dTime);
 	virtual ~Object() = default;

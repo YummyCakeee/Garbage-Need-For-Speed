@@ -58,6 +58,6 @@ public:
 	void BindToCamera(const Camera* camera, glm::vec3 systemOffset = glm::vec3(0.0f));
 	void UnbindFromCamera();
 	virtual void Update(double dTime) override;
-	virtual void Draw() override;
+	virtual void Draw(const Shader* shader = NULL) override;
 };
 
