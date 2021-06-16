@@ -172,7 +172,7 @@ void Car::ProcessInput(const std::vector<Key>& keys, Mouse& mouse, double dTime)
 	{
 		Turn(-40.0 / (glm::length(GetSpeedProjToDirection()) / 2.0 + 0.001), dTime);
 	}
-	if (keys[int(KeysEnum::F)].state == KeyState::PRESS)
+	if (keys[int(KeysEnum::F)].state == KeyState::RELEASE)
 	{
 		auto headlight = lights.find("headlight_left")->second;
 		headlight->Enable(!headlight->IsEnabled());

@@ -69,7 +69,7 @@ Object* Map::GetPlayer()
 
 void Map::Initialize()
 {
-	CameraTPM* camera = new CameraTPM(glm::vec3(0.0f, 0.0f, 2.0f));
+	CameraFM* camera = new CameraFM(glm::vec3(0.0f, 0.0f, 2.0f));
 	SetCamera(camera);
 	//	Создание дороги
 
@@ -121,7 +121,7 @@ void Map::Initialize()
 		SetRoadObject(streetLightLeft);
 		//	Adding Light Source
 		SpotLight* lightLeft = new SpotLight(glm::vec3(0.0f), glm::vec3(0.0f, -1.0f, 0.1f),
-			glm::vec3(0.04f), glm::vec3(0.7f), glm::vec3(1.0f), 1.0f, 0.01f, 0.06f,
+			glm::vec3(0.01f), glm::vec3(0.7f), glm::vec3(1.0f), 1.0f, 0.01f, 0.06f,
 			glm::cos(glm::radians(12.5f)), glm::cos(glm::radians(22.5f)));
 		lightLeft->SetOffset(glm::vec3(0.0f, 5.0f, 1.0f));
 		lights.push_back(lightLeft);
@@ -134,8 +134,8 @@ void Map::Initialize()
 		SetRoadObject(streetLightRight);
 		//	Adding Light Source
 		SpotLight* lightRight = new SpotLight(glm::vec3(0.0f), glm::vec3(0.0f, -1.0f, 0.1f),
-			glm::vec3(0.04f), glm::vec3(0.7f), glm::vec3(1.0f), 1.0f, 0.01f, 0.06f,
-			glm::cos(glm::radians(12.5f)), glm::cos(glm::radians(28.5f)));
+			glm::vec3(0.01f), glm::vec3(0.7f), glm::vec3(1.0f), 1.0f, 0.01f, 0.06f,
+			glm::cos(glm::radians(12.5f)), glm::cos(glm::radians(22.5f)));
 		lightRight->SetOffset(glm::vec3(0.0f, 5.0f, 1.0f));
 		lights.push_back(lightRight);
 		streetLightRight->BindLightSource("lamp", lightRight);
@@ -151,6 +151,14 @@ void Map::Initialize()
 	{
 		trees[i]->SetGlobalShader(game->shaders.find("standart")->second);
 		trees[i]->SetCamera(camera);
+		//	Remove reflectivity
+		std::vector<Mesh>* treeMeshes = trees[i]->GetMeshes();
+		for (int j = 0; j < treeMeshes->size(); j++)
+		{
+			(*treeMeshes)[j].GetMaterial()->SetProperty(MaterialProp::REFLECTIVITY, 0.003f);
+			(*treeMeshes)[j].GetMaterial()->SetProperty(MaterialProp::SHININESS, 256.0f);
+			(*treeMeshes)[j].GetMaterial()->SetColor(MaterialType::SPECULAR, glm::vec4(0.05f, 0.05f, 0.05f, 1.0f));
+		}
 		models.insert(std::make_pair("tree" + std::to_string(i + 1), trees[i]));
 	}
 	for (int i = 0, sign = 1; i < treesCount; i++)
@@ -167,13 +175,13 @@ void Map::Initialize()
 	//	Создание игрока
 	Car* car = new Car(glm::vec3(1.0f, 0.0f, 0.0f), glm::dvec3(0.0f), glm::vec3(0.0f), 216.0f, 2000.0f, 50.0f, 50.0);
 	SpotLight* lightLeft = new SpotLight(glm::vec3(0.0f), glm::vec3(0.8f, -0.3f, -0.1f),
-		glm::vec3(0.04f), glm::vec3(0.9f), glm::vec3(1.0f), 1.0f, 0.09f, 0.2f,
+		glm::vec3(0.004f), glm::vec3(0.9f), glm::vec3(1.0f), 1.0f, 0.09f, 0.2f,
 		glm::cos(glm::radians(12.5f)), glm::cos(glm::radians(28.5f)));
 	lightLeft->SetOffset(glm::vec3(1.0f, 0.3f, -0.28f));
 	lights.push_back(lightLeft);
 	car->BindLightSource("headlight_left", lightLeft);
 	SpotLight* lightRight = new SpotLight(glm::vec3(0.0f), glm::vec3(0.8f, -0.3f, 0.25f),
-		glm::vec3(0.04f), glm::vec3(0.9f), glm::vec3(1.0f), 1.0f, 0.09f, 0.2f,
+		glm::vec3(0.004f), glm::vec3(0.9f), glm::vec3(1.0f), 1.0f, 0.09f, 0.2f,
 		glm::cos(glm::radians(12.5f)), glm::cos(glm::radians(28.5f)));
 	lightRight->SetOffset(glm::vec3(1.0f, 0.3f, 0.28f));
 	lights.push_back(lightRight);
@@ -239,8 +247,8 @@ void Map::Initialize()
 	//	Установка глобальных параметров
 	SetPlayer(car);
 
-	camera->BindToTarget(car->GetPosition());
-	camera->offset = glm::vec3(0.0f, 0.2f, 0.0f);
+	//camera->BindToTarget(car->GetPosition());
+	//camera->offset = glm::vec3(0.0f, 0.2f, 0.0f);
 	ParticleSystem* ps = new ParticleSystem(0.02f, 3, 600, true, false, glm::vec3(6.0f, 0.0f, 6.0f), 100.0f);
 	ps->SetParticlesAcceleration(glm::vec3(0.0f, -0.2f, 0.0f));
 	Model* rainDrop = new Model(std::filesystem::canonical("models/Other/raindrop").string(),
@@ -257,7 +265,7 @@ void Map::Initialize()
 	AddObject(ps);
 
 	//	Юниформ-буффер источников света
-	lightsUbo = LightsUBO(*(game->shaders.find("standart")->second), 1, 4, 10);
+	lightsUbo = LightsUBO(*(game->shaders.find("standart")->second), 1, 4, 8);
 
 
 	for (int j = 0; j < objects.size(); j++)
@@ -337,12 +345,32 @@ void Map::ActBots(double dTime)
 
 void Map::Render()
 {	
+	//	Отрисовка карт теней
+	//	Привязка буфера глубины
+	game->depthBuffer->Bind();
+	game->depthBuffer->PrepareForRender();
+	ShadowMapShader* shdMapShader = (ShadowMapShader*)(game->shaders.find("depth")->second);
+	DirLight* dLight = (DirLight*)lights[lights.size() - 1];
+	glm::mat4 lightSpaceMat = (dLight)->GetProjectionMatrix() * 
+		(dLight)->GetViewMatrix(camera->GetPosition() - dLight->GetDirection() * 25.0f);
+	shdMapShader->setLightSpaceAndModelMatrix(&lightSpaceMat, NULL);
+	for (int i = 0; i < objects.size(); i++)
+	{
+		objects[i]->Draw(shdMapShader);
+	}
+	//game->depthBuffer->Render();
+	game->depthBuffer->Unbind();
+
+	//	TEST
+	MaterialShader* matShader = (MaterialShader*)(game->shaders.find("standart")->second);
+	matShader->lightSpaceMat = lightSpaceMat;
+	matShader->shadowMapTexture = game->depthBuffer->texture.GetId();
+	//	~TEST
 
 	//	Привязка экранного кадрового буфера
 	game->screenBuffer->Bind();
 	game->screenBuffer->PrepareForRender();
 	//	Отрисовка скайбокса
-	ShadowMapShader* shader = (ShadowMapShader*)(game->shaders.find("depth")->second);
 	RenderSkybox();
 	for (int i = 0; i < objects.size(); i++)
 	{
@@ -350,6 +378,7 @@ void Map::Render()
 	}
 	//	Вывод экранного буфера на экран
 	game->screenBuffer->Render();
+	
 }
 
 void Map::QuickCameraSetUp(Camera* camera)
@@ -368,6 +397,8 @@ void Map::Update(float dTime)
 	Camera* camera = player->GetModel()->GetCamera();
 	camera->SetFov(45 + glm::length(player->GetSpeed()));
 	camera->UpdateCameraVectors();
+	ScreenShader* screenShader = (ScreenShader*)(game->shaders.find("screen")->second);
+	screenShader->setPlayerSpeed(player->GetSpeed());
 	const glm::vec3* playerPos = player->GetPosition();
 
 	//	Обновление статических объектов
@@ -428,7 +459,7 @@ void Map::Update(float dTime)
 		{
 			float angle = glm::acos(glm::dot(lightDir, camDir)) * 180.0f / glm::pi<float>();
 			float lightDist = glm::distance(lightPos, camPos);
-			if (lightDist <= 35.0f && angle < 110.0f || lightDist < 5.0f)
+			if (lightDist <= 55.0f && angle < 110.0f || lightDist < 5.0f)
 			{
 				lightsDistances.push_back(std::make_pair(i, lightDist));
 			}

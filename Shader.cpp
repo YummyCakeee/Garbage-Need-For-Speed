@@ -183,8 +183,8 @@ void Shader::checkCompileErrors(unsigned int shader, std::string type)
 	}
 }
 
-MaterialShader::MaterialShader(ShaderType type, const char* vertexPath, const char* fragmentPath, const char* geometryPath) :
-	Shader(type, vertexPath, fragmentPath, geometryPath)
+MaterialShader::MaterialShader(const char* vertexPath, const char* fragmentPath, const char* geometryPath) :
+	Shader(ShaderType::MATERIAL, vertexPath, fragmentPath, geometryPath)
 {
 	camera = NULL;
 	modelMatrix = NULL;
@@ -226,6 +226,10 @@ void MaterialShader::loadCameraAndModelMatrix(const Camera* camera, const glm::m
 	setMatrix4F("model", model);
 	glm::mat4 normalMatrix = glm::transpose(glm::inverse(model));
 	setMatrix4F("normalMatrix", normalMatrix);
+	//	TEST
+	glm::mat4 lsMat = lightSpaceMat;
+	setMatrix4F("lightSpaceMatrix", lsMat);
+	//	~TEST
 }
 
 void MaterialShader::setCameraAndModelMatrix(const Camera* camera, const glm::mat4* modelMatrix)
@@ -238,8 +242,8 @@ void MaterialShader::loadMainInfo(const Camera* camera, const glm::mat4* modelMa
 	loadCameraAndModelMatrix(camera, modelMatrix);
 }
 
-ShadowMapShader::ShadowMapShader(ShaderType type, const char* vertexPath, const char* fragmentPath, const char* geometryPath) :
-	Shader(type, vertexPath, fragmentPath, geometryPath)
+ShadowMapShader::ShadowMapShader(const char* vertexPath, const char* fragmentPath, const char* geometryPath) :
+	Shader(ShaderType::SHADOW_MAP, vertexPath, fragmentPath, geometryPath)
 {
 	lightSpaceMatrix = NULL;
 	modelMatrix = NULL;
@@ -249,14 +253,67 @@ ShadowMapShader::~ShadowMapShader()
 {
 }
 
+
+void ShadowMapShader::loadLightSpaceAndModelMatrix(const glm::mat4* lightSpaceMatrix, const glm::mat4* modelMatrix) const
+{
+	const glm::mat4* lightSpaceMat = this->lightSpaceMatrix;
+	if (lightSpaceMatrix != NULL) lightSpaceMat = lightSpaceMatrix;
+	glm::mat4 lsMat = glm::mat4(1.0f);
+	if (lightSpaceMat != NULL) lsMat = *lightSpaceMat;
+	else
+	{
+		std::cout << "WARNING:: No light space matrix set to object which is using shader ID: " << programID << std::endl;
+	}
+	const glm::mat4* modelMat = this->modelMatrix;
+	if (modelMatrix != NULL) modelMat = modelMatrix;
+	glm::mat4 model = glm::mat4(1.0f);
+	if (modelMat == NULL)
+	{
+		std::cout << "WARNING: No model matrix set to object which is using shader ID: " << programID << std::endl;
+	}
+	else model = *modelMat;
+	glm::mat4 finalMatrix = lsMat * model;
+	setMatrix4F("finalMatrix", finalMatrix);
+}
+
 void ShadowMapShader::loadMainInfo(const glm::mat4* lightSpaceMatrix, const glm::mat4* modelMatrix) const
 {
-
+	loadLightSpaceAndModelMatrix(lightSpaceMatrix, modelMatrix);
 }
 
 void ShadowMapShader::setLightSpaceAndModelMatrix(const glm::mat4* lightSpaceMatrix, const glm::mat4* modelMatrix)
 {
+	this->lightSpaceMatrix = lightSpaceMatrix;
+	this->modelMatrix = modelMatrix;
+}
 
+
+
+ScreenShader::ScreenShader(const char* vertexPath, const char* fragmentPath, const char* geometryPath) :
+	Shader(ShaderType::SCREEN, vertexPath, fragmentPath, geometryPath)
+{
+	playerSpeed = glm::dvec3(0.0f);
+}
+
+ScreenShader::~ScreenShader()
+{
+}
+
+void ScreenShader::loadPlayerSpeed(const glm::dvec3* playerSpeed) const
+{
+	glm::dvec3 plrSpeed = this->playerSpeed;
+	if (playerSpeed != NULL) plrSpeed = *playerSpeed;
+	setVec("playerSpeed", (glm::vec3)plrSpeed);
+}
+
+void ScreenShader::loadMainInfo(const glm::dvec3* playerSpeed) const
+{
+	loadPlayerSpeed(playerSpeed);
+}
+
+void ScreenShader::setPlayerSpeed(glm::dvec3 playerSpeed)
+{
+	this->playerSpeed = playerSpeed;
 }
 
 LightsUBO::LightsUBO()

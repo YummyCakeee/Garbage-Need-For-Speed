@@ -85,7 +85,7 @@ public:
 	void SetDirection(glm::vec3 direction);
 	glm::vec3 GetDirection() const;
 	glm::mat4 GetProjectionMatrix() const override;
-	glm::mat4 GetViewMatrix() const;
+	glm::mat4 GetViewMatrix(const glm::vec3& lightPosition = glm::vec3(0.0f)) const;
 };
 
 class SpotLight : public MovingLight

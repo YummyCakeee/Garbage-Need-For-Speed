@@ -10,13 +10,14 @@ protected:
 	unsigned int id;
 	int width;
 	int height;
-	Texture texture;
+	//Texture texture;
 	const Shader* shader;
 	unsigned int sfVAO, sfVBO;
 	FrameBuffer(int width, int height, const Shader* shader = NULL);
 	virtual void SetupBuffer() = 0;
 	void InitScreenField();
 public:
+	Texture texture; //	TEST!!!
 	FrameBuffer() = delete;
 	~FrameBuffer();
 	unsigned int ID();

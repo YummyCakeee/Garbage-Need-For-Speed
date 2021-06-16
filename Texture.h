@@ -19,8 +19,8 @@ private:
 	TextureType type;
 	std::string path;
 	int channelsCount;
-	float width;
-	float height;
+	int width;
+	int height;
 public:
 	Texture();
 	Texture(unsigned int id, TextureType type, const std::string& path, int width = 0.0f, int height = 0.0f, int channelsCount = 3);
@@ -28,8 +28,8 @@ public:
 	TextureType GetType();
 	std::string GetPath();
 	int GetChannelsCount();
-	float GetWidth();
-	float GetHeight();
+	int GetWidth();
+	int GetHeight();
 	void SetType(TextureType type);
 	void SetPath(const std::string& path);
 	void SetSize(int width, int height);

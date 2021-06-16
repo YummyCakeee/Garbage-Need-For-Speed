@@ -240,7 +240,8 @@ void Mesh::Draw(const Shader& shader)
 		const MaterialShader* matShader = (const MaterialShader*)(&shader);
 		matShader->loadMainInfo(root->GetCamera(), &modelMat);
 		matShader->setBool("hasSkybox", false);
-		for (unsigned int i = 0; i < textures.size(); i++)
+		int i = 0;
+		for (i; i < textures.size(); i++)
 		{
 			std::string name = "material.";
 			switch (textures[i].GetType())
@@ -274,6 +275,11 @@ void Mesh::Draw(const Shader& shader)
 				glBindTexture(GL_TEXTURE_2D, textures[i].GetId());
 			}
 		}
+		//	TEST
+		matShader->setInt("shadowMap[0]", i);
+		glActiveTexture(GL_TEXTURE0 + i);
+		glBindTexture(GL_TEXTURE_2D, matShader->shadowMapTexture);
+		//	~TEST
 		matShader->setInt("material.diffTextCount", diffuseN - 1);
 		matShader->setInt("material.specTextCount", specularN - 1);
 		matShader->setInt("material.ambTextCount", heightN - 1);
@@ -294,7 +300,7 @@ void Mesh::Draw(const Shader& shader)
 		normalN = 1;
 		heightN = 1;
 		matShader->setBool("hasSkybox", false);
-		for (unsigned int i = 0; i < textures.size(); i++)
+		for (int i = 0; i < textures.size(); i++)
 		{
 			std::string name = "material.";
 			switch (textures[i].GetType())
@@ -320,11 +326,18 @@ void Mesh::Draw(const Shader& shader)
 			}
 			matShader->setInt(name, 15);
 		}
+		//	TEST
+		matShader->setInt("shadowMap[0]", 15);
+		//	~TEST
 	}; break;
 	case ShaderType::SHADOW_MAP:
 	{
-		const ShadowMapShader* matShader = (const ShadowMapShader*)(&shader);
-
+		const ShadowMapShader* shdMapShader = (const ShadowMapShader*)(&shader);
+		shdMapShader->loadMainInfo(NULL, &modelMat);
+		glBindVertexArray(VAO);
+		glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
+		glActiveTexture(GL_TEXTURE0);
 	}; break;
 	default: break;
 	}

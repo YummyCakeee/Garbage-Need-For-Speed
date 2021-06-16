@@ -266,12 +266,12 @@ glm::vec3 DirLight::GetDirection() const
 
 glm::mat4 DirLight::GetProjectionMatrix() const
 {
-	return glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 1.0f, 7.5f);
+	return glm::ortho(-25.0f, 25.0f, -25.0f, 25.0f, 1.0f, 50.0f);
 }
 
-glm::mat4 DirLight::GetViewMatrix() const
+glm::mat4 DirLight::GetViewMatrix(const glm::vec3& lightPosition) const
 {
-	return glm::lookAt(glm::vec3(0.0f), direction, glm::vec3(0.0f, 1.0f, 0.0f));
+	return glm::lookAt(lightPosition, lightPosition + direction, glm::vec3(0.0f, 1.0f, 0.0f));
 }
 
 //	SpotLight

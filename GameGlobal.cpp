@@ -109,18 +109,24 @@ void GameGlobal::Initialize()
 	InitOpenGL();
 	srand(time(NULL));
 	map = NULL;
-	Shader* standartShader = new MaterialShader(ShaderType::MATERIAL, "shaders\\standart_shader.vert", "shaders\\standart_shader.frag");
+	MaterialShader* standartShader = new MaterialShader("shaders\\standart_shader.vert", "shaders\\standart_shader.frag");
 	shaders.insert(std::make_pair("standart", standartShader));
-	Shader* skyboxShader = new MaterialShader(ShaderType::MATERIAL, "shaders\\skybox_shader.vert", "shaders\\skybox_shader.frag");
+	MaterialShader* skyboxShader = new MaterialShader("shaders\\skybox_shader.vert", "shaders\\skybox_shader.frag");
 	shaders.insert(std::make_pair("skybox", skyboxShader));
-	Shader* raindropShader = new MaterialShader(ShaderType::MATERIAL, "shaders\\raindrop_shader.vert", "shaders\\raindrop_shader.frag");
+	MaterialShader* raindropShader = new MaterialShader("shaders\\raindrop_shader.vert", "shaders\\raindrop_shader.frag");
 	shaders.insert(std::make_pair("raindrop", raindropShader));
-	Shader* screenShader = new MaterialShader(ShaderType::SCREEN, "shaders\\screen_shader.vert", "shaders\\screen_shader.frag");
+
+	ScreenShader* screenShader = new ScreenShader("shaders\\screen_shader.vert", "shaders\\screen_shader.frag");
 	shaders.insert(std::make_pair("screen", screenShader));
 	screenBuffer = new ScreenFrameBuffer(gameProps.GetWindowWidth(), gameProps.GetWindowHeight(), screenShader);
-	Shader* depthShader = new ShadowMapShader(ShaderType::SHADOW_MAP, "shaders\\depth_shader.vert", "shaders\\depth_shader.frag");
+
+	ShadowMapShader* depthShader = new ShadowMapShader("shaders\\depth_shader.vert", "shaders\\depth_shader.frag");
 	shaders.insert(std::make_pair("depth", depthShader));
-	depthBuffer = new DepthFrameBuffer(1024, 1024, depthShader);
+
+	ShadowMapShader* depthShader2 = new ShadowMapShader("shaders\\screen_shader.vert", "shaders\\depth_shader2.frag");
+	shaders.insert(std::make_pair("depth2", depthShader2));
+	depthBuffer = new DepthFrameBuffer(8192, 8192, depthShader2);
+
 	InitKeys();
 	map = new Map(*this);
 	map->Initialize();

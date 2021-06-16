@@ -70,7 +70,10 @@ void FrameBuffer::Render()
 	glDisable(GL_BLEND);
 	glDisable(GL_CULL_FACE);
 	shader->use();
-	//screenShader->setVec("playerSpeed", (glm::vec3)gameGlob.GetMap()->GetPlayer()->GetSpeed());
+	if (shader->GetType() == ShaderType::SCREEN)
+	{
+		((ScreenShader*)shader)->loadMainInfo();
+	}
 	glBindVertexArray(sfVAO);
 	glBindTexture(GL_TEXTURE_2D, texture.GetId());
 	glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -113,6 +116,7 @@ void ScreenFrameBuffer::PrepareForRender()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
@@ -133,6 +137,10 @@ void DepthFrameBuffer::SetupBuffer()
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, texture.GetId(), 0);
 	glDrawBuffer(GL_NONE);
 	glReadBuffer(GL_NONE);
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	{
+		std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete" << std::endl;
+	}
 	Unbind();
 }
 
@@ -141,4 +149,8 @@ void DepthFrameBuffer::PrepareForRender()
 	glViewport(0, 0, width, height);
 	Bind();
 	glClear(GL_DEPTH_BUFFER_BIT);
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_CULL_FACE);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
