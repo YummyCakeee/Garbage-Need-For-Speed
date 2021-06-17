@@ -7,7 +7,9 @@
 #include "Texture.h"
 #include "Model.h"
 
+class Shader;
 class Model;
+class Mesh;
 
 enum class MaterialType
 {
@@ -45,9 +47,11 @@ public:
 class Material
 {
 private:
+	friend class Mesh;
 	glm::vec4 ambientColor;
 	glm::vec4 diffuseColor;
 	glm::vec4 specularColor;
+	std::vector<Texture> textures;
 	float shininess;
 	float alpha;
 	float reflectivity;
@@ -56,13 +60,15 @@ private:
 public:
 	Material();
 	Shader* GetShader();
-	float GetProperty(MaterialProp property);
-	glm::vec4 GetColor(MaterialType material);
+	float GetProperty(MaterialProp property) const;
+	glm::vec4 GetColor(MaterialType material) const;
+	const std::vector<Texture>* GetTextures() const;
+	bool HasTransparency();
 	void SetShader(Shader* shader);
 	void SetColor(MaterialType material, glm::vec4 color);
 	void SetProperty(MaterialProp property, float value);
-	bool HasTransparency();
 	void SetTransparencyStatus(bool hasTransparency);
+	void AddTexture(const Texture& texture);
 };
 
 class Mesh
@@ -72,7 +78,6 @@ private:
 	unsigned int VAO, VBO, EBO;
 	std::vector<Vertex> vertices;
 	std::vector<unsigned int> indices;
-	std::vector<Texture> textures;
 	Material material;
 	glm::vec3 position;
 	glm::vec3 rotation;
@@ -86,10 +91,9 @@ private:
 public:
 	std::string name;
 	Mesh(const Model* root, const Mesh* parent, const std::vector<Vertex>& vertices, const std::vector<unsigned int>& indices,
-		const std::vector<Texture>& textures, const std::string& name);
+		const std::vector<Texture>* textures, const std::string& name);
 	std::vector<Vertex>& GetVertices();
 	std::vector<unsigned int>& GetIndices();
-	std::vector<Texture>& GetTextures();
 	Shader* GetShader();
 	Material* GetMaterial();
 	const glm::mat4& GetModelMatrix() const;

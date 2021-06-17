@@ -20,32 +20,32 @@ Texture::Texture(unsigned int id, TextureType type, const std::string& path, int
 	this->height = height;
 }
 
-unsigned int Texture::GetId()
+unsigned int Texture::GetId() const
 {
 	return id;
 }
 
-TextureType Texture::GetType()
+TextureType Texture::GetType() const
 {
 	return type;
 }
 
-std::string Texture::GetPath()
+std::string Texture::GetPath() const
 {
 	return path;
 }
 
-int Texture::GetChannelsCount()
+int Texture::GetChannelsCount() const
 {
 	return channelsCount;
 }
 
-int Texture::GetWidth()
+int Texture::GetWidth() const
 {
 	return width;
 }
 
-int Texture::GetHeight()
+int Texture::GetHeight() const
 {
 	return height;
 }

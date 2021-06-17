@@ -18,6 +18,19 @@
 
 class Car : public Object
 {
+private:
+	void AddResistanceForces();
+	float mass;
+	float wheelsAxisDist;
+	float wheelsRadius;
+	float gearRatio;
+	float diffRatio;
+	float transEfficiency;
+	float gasPercentage;
+	float maxTorque;
+	float angularVel;
+	double maxTurnAngle;
+	double currentTurnAngle;
 public:
 	Car();
 	Car(const glm::vec3& dir, const glm::dvec3& speed, const glm::vec3& position,
@@ -35,19 +48,5 @@ public:
 	double GetMaxTurnAngle();
 	float GetDriveForce();
 	virtual void ProcessInput(const std::vector<Key>& keys, Mouse& mouse, double dTime) override;
-
-private:
-	void AddResistanceForces();
-	float mass;
-	float wheelsAxisDist;
-	float wheelsRadius;
-	float gearRatio;
-	float diffRatio;
-	float transEfficiency;
-	float gasPercentage;
-	float maxTorque;
-	float angularVel;
-	double maxTurnAngle;
-	double currentTurnAngle;
 };
 

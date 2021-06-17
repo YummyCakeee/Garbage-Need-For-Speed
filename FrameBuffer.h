@@ -10,22 +10,26 @@ protected:
 	unsigned int id;
 	int width;
 	int height;
-	//Texture texture;
+	Texture texture;
+	const Texture* boundTexture;
 	const Shader* shader;
 	unsigned int sfVAO, sfVBO;
 	FrameBuffer(int width, int height, const Shader* shader = NULL);
 	virtual void SetupBuffer() = 0;
 	void InitScreenField();
 public:
-	Texture texture; //	TEST!!!
 	FrameBuffer() = delete;
 	~FrameBuffer();
-	unsigned int ID();
-	void Bind();
-	void Unbind();
+	unsigned int ID() const;
+	Texture GetTexture() const;
+	const Texture* GetBoundTexture();
+	void Bind() const;
+	void Unbind() const;
+	virtual void BindTexture(const Texture* texture);
+	virtual void UnbindTexture();
 	void SetShader(const Shader* shader);
 	virtual void PrepareForRender() = 0;
-	void Render();
+	void Render() const;
 };
 
 class ScreenFrameBuffer : public FrameBuffer
@@ -46,5 +50,7 @@ private:
 public:
 	DepthFrameBuffer(int width, int height, const Shader* shader = NULL);
 	~DepthFrameBuffer();
-	void PrepareForRender() override;
+	virtual void BindTexture(const Texture* texture) override;
+	virtual void UnbindTexture() override;
+	virtual void PrepareForRender() override;
 };

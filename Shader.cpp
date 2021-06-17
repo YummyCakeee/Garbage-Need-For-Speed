@@ -1,13 +1,5 @@
 #include "Shader.h"
 
-SceneInfo::SceneInfo()
-{
-}
-
-SceneInfo::~SceneInfo()
-{
-}
-
 unsigned int Shader::ID() const
 {
 	return programID;
@@ -183,11 +175,41 @@ void Shader::checkCompileErrors(unsigned int shader, std::string type)
 	}
 }
 
+void Shader::draw(unsigned int VAO, size_t indicesCount) const
+{
+	glBindVertexArray(VAO);
+	glDrawElements(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, 0);
+	glBindVertexArray(0);
+	glActiveTexture(GL_TEXTURE0);
+}
+
+void Shader::clearSamplers() const
+{
+}
+
+void Shader::clearShaderInfo()
+{
+}
+
+void Shader::clear()
+{
+	clearSamplers();
+	clearShaderInfo();
+}
+
+LightInfo::LightInfo(const std::vector<glm::mat4>& lightSpaceMats, const std::vector<unsigned int>& shadowMapsID, SourceType type)
+{
+	this->lightSpaceMats = lightSpaceMats;
+	this->shadowMapsID = shadowMapsID;
+	this->type = type;
+}
+
 MaterialShader::MaterialShader(const char* vertexPath, const char* fragmentPath, const char* geometryPath) :
 	Shader(ShaderType::MATERIAL, vertexPath, fragmentPath, geometryPath)
 {
-	camera = NULL;
-	modelMatrix = NULL;
+	shaderInfo.camera = NULL;
+	shaderInfo.modelMatrix = NULL;
+	maxMatAndSkyboxTexsCnt = 9;
 }
 
 MaterialShader::~MaterialShader()
@@ -196,7 +218,7 @@ MaterialShader::~MaterialShader()
 
 void MaterialShader::loadCameraAndModelMatrix(const Camera* camera, const glm::mat4* modelMatrix) const
 {
-	const Camera* cam = this->camera;
+	const Camera* cam = this->shaderInfo.camera;
 	if (camera != NULL) cam = camera;
 	glm::mat4 projection = glm::mat4(1.0f);
 	glm::mat4 view = glm::mat4(1.0f);
@@ -211,7 +233,7 @@ void MaterialShader::loadCameraAndModelMatrix(const Camera* camera, const glm::m
 		std::cout << "WARNING:: No camera set to object which is using shader ID: " << programID << std::endl;
 		setVec("viewPos", glm::vec3(0.0f));
 	}
-	const glm::mat4* modelMat = this->modelMatrix;
+	const glm::mat4* modelMat = this->shaderInfo.modelMatrix;
 	if (modelMatrix != NULL) modelMat = modelMatrix;
 	glm::mat4 model;
 	if (modelMat == NULL)
@@ -226,20 +248,175 @@ void MaterialShader::loadCameraAndModelMatrix(const Camera* camera, const glm::m
 	setMatrix4F("model", model);
 	glm::mat4 normalMatrix = glm::transpose(glm::inverse(model));
 	setMatrix4F("normalMatrix", normalMatrix);
-	//	TEST
-	glm::mat4 lsMat = lightSpaceMat;
-	setMatrix4F("lightSpaceMatrix", lsMat);
-	//	~TEST
 }
 
-void MaterialShader::setCameraAndModelMatrix(const Camera* camera, const glm::mat4* modelMatrix)
+void MaterialShader::loadMaterial(const Material* material) const
 {
-	this->camera = camera;
-	this->modelMatrix = modelMatrix;
+	setBool("hasSkybox", false);
+	if (material != NULL)
+	{
+		unsigned int diffuseN = 1;
+		unsigned int specularN = 1;
+		unsigned int normalN = 1;
+		unsigned int heightN = 1;
+		unsigned int cubeMapN = 1;
+		unsigned int samplerIndex = 0;
+
+		const std::vector<Texture>* textures = material->GetTextures();
+		if (textures != NULL)
+		{
+			for (int i = 0; i < textures->size(); i++)
+			{
+				std::string name = "material.";
+				switch ((*textures)[i].GetType())
+				{
+				case TextureType::Diffuse:
+					if (diffuseN > 2) continue;
+					name += "texture_diffuse" + std::to_string(diffuseN++);
+					break;
+				case TextureType::Specular:
+					if (specularN > 2) continue;
+					name += "texture_specular" + std::to_string(specularN++);
+					break;
+				case TextureType::Normal:
+					if (normalN > 2) continue;
+					name += "texture_normal" + std::to_string(normalN++);
+					break;
+				case TextureType::Height:
+					if (heightN > 2) continue;
+					name += "texture_height" + std::to_string(heightN++);
+					break;
+				case TextureType::CubeMap:
+					if (cubeMapN > 1) continue;
+					name = "skybox";
+					setBool("hasSkybox", true);
+					cubeMapN++;
+					break;
+				default: continue;
+				}
+				setInt(name, samplerIndex);
+				glActiveTexture(GL_TEXTURE0 + samplerIndex);
+				samplerIndex++;
+				if ((*textures)[i].GetType() == TextureType::CubeMap)
+				{
+					glBindTexture(GL_TEXTURE_CUBE_MAP, (*textures)[i].GetId());
+				}
+				else
+				{
+					glBindTexture(GL_TEXTURE_2D, (*textures)[i].GetId());
+				}
+			}
+		}
+		setInt("material.diffTextCount", diffuseN - 1);
+		setInt("material.specTextCount", specularN - 1);
+		setInt("material.ambTextCount", heightN - 1);
+		setVec("material.diffuse", material->GetColor(MaterialType::DIFFUSE));
+		setVec("material.ambient", material->GetColor(MaterialType::AMBIENT));
+		setVec("material.specular", material->GetColor(MaterialType::SPECULAR));
+		setFloat("material.shininess", material->GetProperty(MaterialProp::SHININESS));
+		setFloat("material.alpha", material->GetProperty(MaterialProp::ALPHA));
+		setFloat("material.reflectivity", material->GetProperty(MaterialProp::REFLECTIVITY));
+
+	}
+	else
+	{
+		setInt("material.diffTextCount", 0);
+		setInt("material.specTextCount", 0);
+		setInt("material.ambTextCount", 0);
+		setVec("material.diffuse", glm::vec4(1.0f, 0.0f, 0.9f, 1.0f));
+		setVec("material.ambient", glm::vec4(1.0f, 0.0f, 0.9f, 1.0f));
+		setVec("material.specular", glm::vec4(0.0f));
+		setFloat("material.shininess", 32.0f);
+		setFloat("material.alpha", 1.0f);
+		setFloat("material.reflectivity", 0.0f);
+	}
 }
-void MaterialShader::loadMainInfo(const Camera* camera, const glm::mat4* modelMatrix) const
+
+void MaterialShader::loadLightsInfo(const std::list<LightInfo>*) const
+{
+	int dLightsIndex = 0;
+	int pLightsIndex = 0;
+	int sLightsIndex = 0;
+	int i = maxMatAndSkyboxTexsCnt;
+	for (auto it = shaderInfo.lightsInfo.begin(); it != shaderInfo.lightsInfo.end(); it++, i++)
+	{
+		switch (it->type)
+		{
+		case SourceType::DIRECTIONAL:
+		{
+			glm::mat4 lightSpaceMat = glm::mat4(1.0f);
+			if (it->lightSpaceMats.size() > 0)
+				lightSpaceMat = it->lightSpaceMats[0];
+			setMatrix4F("dLightSpaceMatrix[" + std::to_string(dLightsIndex) + "]", lightSpaceMat);
+			setInt("dLightShadowMaps[" + std::to_string(dLightsIndex) + "]", i);
+			glActiveTexture(GL_TEXTURE0 + i);
+			glBindTexture(GL_TEXTURE_2D, it->shadowMapsID[0]);
+			dLightsIndex++;
+		}
+		case SourceType::POINT:
+		{
+
+		}
+		case SourceType::SPOTLIGHT:
+		{
+			glm::mat4 lightSpaceMat = glm::mat4(1.0f);
+			if (it->lightSpaceMats.size() > 0)
+				lightSpaceMat = it->lightSpaceMats[0];
+			setMatrix4F("sLightSpaceMatrix[" + std::to_string(sLightsIndex) + "]", lightSpaceMat);
+			setInt("sLightShadowMaps[" + std::to_string(sLightsIndex) + "]", i);
+			glActiveTexture(GL_TEXTURE0 + i);
+			glBindTexture(GL_TEXTURE_2D, it->shadowMapsID[0]);
+			sLightsIndex++;
+		}
+		default:
+			break;
+		}
+	}
+}
+
+void MaterialShader::setCamera(const Camera* camera)
+{
+	this->shaderInfo.camera = camera;
+}
+
+void MaterialShader::setModelMatrix(const glm::mat4* modelMatrix)
+{
+	this->shaderInfo.modelMatrix = modelMatrix;
+}
+
+void MaterialShader::addLightInfo(const LightInfo& light)
+{
+	shaderInfo.lightsInfo.push_back(light);
+}
+
+void MaterialShader::loadMainInfo(const Camera* camera, const glm::mat4* modelMatrix, const Material* material) const
 {
 	loadCameraAndModelMatrix(camera, modelMatrix);
+	loadMaterial(material);
+	loadLightsInfo();
+}
+
+void MaterialShader::clearSamplers() const
+{
+	use();
+	setBool("hasSkybox", false);
+	std::string name = "material.";
+	for (int i = 1; i <= 2; i++)
+	{
+		setInt("material.texture_diffuse" + std::to_string(i), 15);
+		setInt("material.texture_specular" + std::to_string(i), 15);
+		setInt("material.texture_normal" + std::to_string(i), 15);
+		setInt("material.texture_height" + std::to_string(i), 15);
+	}
+	setInt("skybox", 14);
+	setInt("dLightShadowMaps[0]", 14);
+}
+
+void MaterialShader::clearShaderInfo()
+{
+	shaderInfo.camera = NULL;
+	shaderInfo.modelMatrix = NULL;
+	shaderInfo.lightsInfo.clear();
 }
 
 ShadowMapShader::ShadowMapShader(const char* vertexPath, const char* fragmentPath, const char* geometryPath) :

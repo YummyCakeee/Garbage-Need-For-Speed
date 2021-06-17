@@ -6,6 +6,7 @@ FrameBuffer::FrameBuffer(int width, int height, const Shader* shader)
 	this->width = width;
 	this->height = height;
 	this->shader = shader;
+	boundTexture = NULL;
 	InitScreenField();
 }
 
@@ -38,19 +39,37 @@ void FrameBuffer::InitScreenField()
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
 }
 
-unsigned int FrameBuffer::ID()
+unsigned int FrameBuffer::ID() const
 {
 	return id;
 }
 
-void FrameBuffer::Bind()
+Texture FrameBuffer::GetTexture() const
+{
+	return texture;
+}
+
+const Texture* FrameBuffer::GetBoundTexture()
+{
+	return boundTexture;
+}
+
+void FrameBuffer::Bind() const
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, id);
 }
 
-void FrameBuffer::Unbind()
+void FrameBuffer::Unbind() const
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void FrameBuffer::BindTexture(const Texture* texture)
+{
+}
+
+void FrameBuffer::UnbindTexture()
+{
 }
 
 void FrameBuffer::SetShader(const Shader* shader)
@@ -58,7 +77,7 @@ void FrameBuffer::SetShader(const Shader* shader)
 	this->shader = shader;
 }
 
-void FrameBuffer::Render()
+void FrameBuffer::Render() const
 {
 	if (shader == NULL)
 	{
@@ -100,7 +119,7 @@ void ScreenFrameBuffer::SetupBuffer()
 	glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, renderBuffer);
-
+	
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete" << std::endl;
@@ -144,9 +163,27 @@ void DepthFrameBuffer::SetupBuffer()
 	Unbind();
 }
 
+void DepthFrameBuffer::BindTexture(const Texture* texture)
+{
+	Bind();
+	boundTexture = texture;
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, boundTexture->GetId(), 0);
+	Unbind();
+}
+
+void DepthFrameBuffer::UnbindTexture()
+{
+	Bind();
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, texture.GetId(), 0);
+	boundTexture = NULL;
+	Unbind();
+}
+
 void DepthFrameBuffer::PrepareForRender()
 {
-	glViewport(0, 0, width, height);
+	if (boundTexture != NULL)
+		glViewport(0, 0, boundTexture->GetWidth(), boundTexture->GetHeight());
+	else glViewport(0, 0, width, height);
 	Bind();
 	glClear(GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);

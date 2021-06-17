@@ -8,17 +8,15 @@
 #include <sstream>
 #include <iostream>
 #include <vector>
+#include <list>
 #include <glm/gtc/type_ptr.hpp>
 #include "LightSource.h"
 #include "Camera.h"
+#include "Mesh.h"
 
-class SceneInfo
-{
-private:
-public:
-	SceneInfo();
-	~SceneInfo();
-};
+
+class Material;
+class Mesh;
 
 enum class ShaderType
 {
@@ -49,31 +47,44 @@ public:
 	void setMatrix4F(const std::string& name, glm::mat4& m) const;
 	ShaderType GetType() const;
 	unsigned int ID() const;
+	virtual void draw(unsigned int VAO, size_t indicesCount) const;
+	virtual void clearSamplers() const;
+	virtual void clearShaderInfo();
+	void clear();
 };
 
 struct LightInfo
 {
-	glm::mat4 lightSpaceMat;
-	//std::list<unsigned int> shadowMapsID;
+	std::vector<glm::mat4> lightSpaceMats;
+	std::vector<unsigned int> shadowMapsID;
+	SourceType type;
+	LightInfo(const std::vector<glm::mat4>& lightSpaceMats, const std::vector<unsigned int>& shadowMapsID, SourceType type);
+};
 
+struct MaterialShaderInfo
+{
+	const Camera* camera;
+	const glm::mat4* modelMatrix;
+	std::list<LightInfo> lightsInfo;
 };
 
 class MaterialShader : public Shader
 {
 private:
-	const Camera* camera;
-	const glm::mat4* modelMatrix;
-	//std::list<LightInfo> lights;
+	MaterialShaderInfo shaderInfo;
 	void loadCameraAndModelMatrix(const Camera* camera = NULL, const glm::mat4* modelMatrix = NULL) const;
+	void loadMaterial(const Material* material) const;
+	void loadLightsInfo(const std::list<LightInfo>* = NULL) const;
+	int maxMatAndSkyboxTexsCnt;
 public:
-	//	TEST
-	unsigned int shadowMapTexture;
-	glm::mat4 lightSpaceMat;
-	//	~TEST
 	MaterialShader(const char* vertexPath, const char* fragmentPath, const char* geometryPath = NULL);
 	~MaterialShader();
-	void loadMainInfo(const Camera* camera = NULL, const glm::mat4* modelMatrix = NULL) const;
-	void setCameraAndModelMatrix(const Camera* camera, const glm::mat4* modelMatrix);
+	void loadMainInfo(const Camera* camera = NULL, const glm::mat4* modelMatrix = NULL, const Material* material = NULL) const;
+	void setCamera(const Camera* camera);
+	void setModelMatrix(const glm::mat4* modelMatrix);
+	void addLightInfo(const LightInfo& light);
+	virtual void clearSamplers() const override;
+	virtual void clearShaderInfo() override;
 };
 
 class ShadowMapShader : public Shader

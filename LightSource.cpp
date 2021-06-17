@@ -141,6 +141,7 @@ MovingLight::MovingLight(glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specula
 void MovingLight::SetPosition(glm::vec3 position)
 {
 	this->position = position;
+	ambient = glm::vec3(0.0f);
 }
 
 void MovingLight::SetOffset(glm::vec3 offset)

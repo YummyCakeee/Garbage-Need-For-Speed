@@ -18,6 +18,7 @@
 #include "Camera.h"
 
 class Mesh;
+class Shader;
 
 class Model
 {

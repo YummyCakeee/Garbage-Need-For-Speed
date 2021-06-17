@@ -84,7 +84,7 @@ public:
 	DirLight(glm::vec3 direction, glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular);
 	void SetDirection(glm::vec3 direction);
 	glm::vec3 GetDirection() const;
-	glm::mat4 GetProjectionMatrix() const override;
+	virtual glm::mat4 GetProjectionMatrix() const override;
 	glm::mat4 GetViewMatrix(const glm::vec3& lightPosition = glm::vec3(0.0f)) const;
 };
 

@@ -24,12 +24,12 @@ private:
 public:
 	Texture();
 	Texture(unsigned int id, TextureType type, const std::string& path, int width = 0.0f, int height = 0.0f, int channelsCount = 3);
-	unsigned int GetId();
-	TextureType GetType();
-	std::string GetPath();
-	int GetChannelsCount();
-	int GetWidth();
-	int GetHeight();
+	unsigned int GetId() const;
+	TextureType GetType() const;
+	std::string GetPath() const;
+	int GetChannelsCount() const;
+	int GetWidth() const;
+	int GetHeight() const;
 	void SetType(TextureType type);
 	void SetPath(const std::string& path);
 	void SetSize(int width, int height);

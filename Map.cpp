@@ -69,7 +69,7 @@ Object* Map::GetPlayer()
 
 void Map::Initialize()
 {
-	CameraFM* camera = new CameraFM(glm::vec3(0.0f, 0.0f, 2.0f));
+	CameraTPM* camera = new CameraTPM(glm::vec3(0.0f, 0.0f, 2.0f));
 	SetCamera(camera);
 	//	Создание дороги
 
@@ -247,15 +247,14 @@ void Map::Initialize()
 	//	Установка глобальных параметров
 	SetPlayer(car);
 
-	//camera->BindToTarget(car->GetPosition());
-	//camera->offset = glm::vec3(0.0f, 0.2f, 0.0f);
+	camera->BindToTarget(car->GetPosition());
+	camera->offset = glm::vec3(0.0f, 0.2f, 0.0f);
 	ParticleSystem* ps = new ParticleSystem(0.02f, 3, 600, true, false, glm::vec3(6.0f, 0.0f, 6.0f), 100.0f);
 	ps->SetParticlesAcceleration(glm::vec3(0.0f, -0.2f, 0.0f));
 	Model* rainDrop = new Model(std::filesystem::canonical("models/Other/raindrop").string(),
 		"raindrop.obj", camera, glm::vec3(1.0f, 0.0f, 0.0f));
 	rainDrop->SetGlobalShader(game->shaders.find("raindrop")->second);
 	rainDrop->SetCamera(camera);
-	rainDrop->GetMesh(0)->GetTextures().push_back(skybox->GetModel()->GetMesh(0)->GetTextures()[0]);
 	rainDrop->GetMesh(0)->GetMaterial()->SetProperty(MaterialProp::ALPHA, 0.4f);
 	rainDrop->GetMesh(0)->GetMaterial()->SetColor(MaterialType::DIFFUSE, glm::vec4(0.8f, 0.83f, 1.0f, 0.4f));
 	models.insert(std::make_pair("rain_drop", rainDrop));
@@ -267,17 +266,13 @@ void Map::Initialize()
 	//	Юниформ-буффер источников света
 	lightsUbo = LightsUBO(*(game->shaders.find("standart")->second), 1, 4, 8);
 
-
-	for (int j = 0; j < objects.size(); j++)
+	Texture skyboxTexture = skybox->GetModel()->GetMesh(0)->GetMaterial()->GetTextures()[0][0];
+	for (auto it = models.begin(); it != models.end(); it++)
 	{
-		auto model = objects[j]->GetModel();
-		if (model != NULL)
+		std::vector<Mesh>* mshs = it->second->GetMeshes();
+		for (int i = 0; i < mshs->size(); i++)
 		{
-			std::vector<Mesh>* mshs = model->GetMeshes();
-			for (int i = 0; i < mshs->size(); i++)
-			{
-				(*mshs)[i].GetTextures().push_back(skybox->GetModel()->GetMesh(0)->GetTextures()[0]);
-			}
+			(*mshs)[i].GetMaterial()->AddTexture(skyboxTexture);
 		}
 	}
 }
@@ -361,10 +356,16 @@ void Map::Render()
 	//game->depthBuffer->Render();
 	game->depthBuffer->Unbind();
 
-	//	TEST
+	//	Передача в шейдер карт теней и матриц пространства источников света
 	MaterialShader* matShader = (MaterialShader*)(game->shaders.find("standart")->second);
-	matShader->lightSpaceMat = lightSpaceMat;
-	matShader->shadowMapTexture = game->depthBuffer->texture.GetId();
+	for (auto it = activeLights.begin(); it != activeLights.end(); it++)
+	{
+		std::vector<glm::mat4> lSpaceMats;
+		lSpaceMats.push_back(lightSpaceMat);
+		std::vector<unsigned int> shadowMapsID;
+		shadowMapsID.push_back(game->depthBuffer->GetTexture().GetId());
+		matShader->addLightInfo(LightInfo(lSpaceMats, shadowMapsID, SourceType::DIRECTIONAL));
+	}
 	//	~TEST
 
 	//	Привязка экранного кадрового буфера
@@ -391,9 +392,16 @@ void Map::QuickCameraSetUp(Camera* camera)
 
 void Map::Update(float dTime)
 {
-	UpdateObjects(dTime);
+	//	Очистка информации шейдеров
+	for (auto it = game->shaders.begin(); it != game->shaders.end(); it++)
+	{
+		it->second->clear();
+	}
+	//	Выполнение ботами действий и обновление всех объектов
 	ActBots(dTime);
+	UpdateObjects(dTime);
 
+	//	Обновление камеры ,исходя из скорости автомобиля игрока
 	Camera* camera = player->GetModel()->GetCamera();
 	camera->SetFov(45 + glm::length(player->GetSpeed()));
 	camera->UpdateCameraVectors();

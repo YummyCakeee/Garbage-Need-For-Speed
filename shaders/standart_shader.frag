@@ -9,7 +9,9 @@ in VS_OUT
 {
 	vec3 Normal;
 	vec3 FragPos;
-	vec4 FragPosLightSpace;
+	vec4 FragPosDLightSpaces[NR_DIR_LIGHTS];
+	vec4 FragPosPLightSpaces[2];
+	vec4 FragPosSLightSpaces[NR_SPOT_LIGHTS];
 	vec2 TextureCoords;
 }fs_in;
 
@@ -84,7 +86,9 @@ uniform vec3 viewPos;
 uniform Material material;
 uniform samplerCube skybox;
 uniform bool hasSkybox;
-uniform sampler2D shadowMap[10];
+uniform sampler2D dLightShadowMaps[NR_DIR_LIGHTS];
+uniform samplerCube pLightShadowMaps[2];
+uniform sampler2D sLightShadowMaps[NR_SPOT_LIGHTS];
 
 vec4 CalcDirLight(int lightIndex, vec3 normal, vec3 viewDir);
 vec4 CalcPointLight(int lightIndex, vec3 normal, vec3 viewDir);
@@ -181,7 +185,7 @@ vec4 CalcDirLight(int lightIndex, vec3 normal, vec3 viewDir)
 	//	specular
 	vec4 specular = vec4(pow(max(dot(normal, halfWayDir), 0.0), activeMat.shininess) * dirLights[i].specular, 1.0f) * activeMat.specular;
 	//	shadow
-	float shadow = CalcShadow(fs_in.FragPosLightSpace, normal, lightDir);
+	float shadow = CalcShadow(fs_in.FragPosDLightSpaces[0], normal, lightDir);
 
 	return ambient + (diffuse + specular) * (1.0f - shadow);
 }
@@ -235,11 +239,11 @@ float CalcShadow(vec4 fragPos, vec3 normal, vec3 lightDir)
 	float currentDepth = projCoords.z;
 	float bias = max(0.01 * (1.0f - dot(normal, lightDir)), 0.005f);
 	float shadow = 0.0f;
-	vec2 texelSize = 1.0f / textureSize(shadowMap[0], 0);
+	vec2 texelSize = 1.0f / textureSize(dLightShadowMaps[0], 0);
 	for (int x = -1; x <= 1; ++x)
 		for (int y = -1; y <= 1; ++y)
 		{
-			float pcfDepth = texture(shadowMap[0], projCoords.xy + vec2(x, y) * texelSize).r;
+			float pcfDepth = texture(dLightShadowMaps[0], projCoords.xy + vec2(x, y) * texelSize).r;
 			shadow += currentDepth - bias > pcfDepth ? 1.0f : 0.0f;
 		}
 	return shadow / 9.0f;

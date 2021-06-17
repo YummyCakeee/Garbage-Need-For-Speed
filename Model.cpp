@@ -168,7 +168,7 @@ Mesh Model::ProcessMesh(aiMesh* mesh, const aiScene* scene)
 	std::vector<Texture> heightMaps = LoadMaterialTextures(material, aiTextureType_AMBIENT, TextureType::Height);
 	textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
 
-	Mesh resultMesh = Mesh(this, NULL, vertices, indices, textures, mesh->mName.C_Str());
+	Mesh resultMesh = Mesh(this, NULL, vertices, indices, &textures, mesh->mName.C_Str());
 	Material* resMeshMat = resultMesh.GetMaterial();
 	for (auto it = diffuseMaps.begin(); it != diffuseMaps.end(); it++)
 	{
@@ -204,12 +204,12 @@ std::vector<Texture> Model::LoadMaterialTextures(aiMaterial* material, aiTexture
 		bool loaded = false;
 		for (unsigned int j = 0; j < meshes.size(); j++)
 		{
-			std::vector<Texture> meshTextures = meshes[j].GetTextures();
-			for (int k = 0; k < meshTextures.size(); k++)
+			const std::vector<Texture>* meshTextures = meshes[j].material.GetTextures();
+			for (int k = 0; k < meshTextures->size(); k++)
 			{
-				if (std::strcmp(meshTextures[k].GetPath().data(), (directory + "\\" + path.C_Str()).c_str()) == 0)
+				if (std::strcmp((*meshTextures)[k].GetPath().data(), (directory + "\\" + path.C_Str()).c_str()) == 0)
 				{
-					textures.push_back(meshTextures[k]);
+					textures.push_back((*meshTextures)[k]);
 					loaded = true;
 					break;
 				}
@@ -369,7 +369,7 @@ Model* Model::CreatePlane(float width, float length, const std::string& name, st
 			modelTextures.push_back(texture);
 		}
 	}
-	Mesh mesh = Mesh(plane, NULL, vertices, indices, modelTextures, name);
+	Mesh mesh = Mesh(plane, NULL, vertices, indices, &modelTextures, name);
 	plane->AddMesh(mesh);
 	return plane;
 }
@@ -463,7 +463,7 @@ Model* Model::CreateCube(glm::vec3 scale, const std::string& name, std::vector<T
 			modelTextures.push_back(texture);
 		}
 	}
-	Mesh mesh = Mesh(cube, NULL, vertices, indices, modelTextures, name);
+	Mesh mesh = Mesh(cube, NULL, vertices, indices, &modelTextures, name);
 	cube->AddMesh(mesh);
 	cube->SetScale(scale);
 	return cube;
@@ -538,7 +538,7 @@ Model* Model::CreateSkybox(const std::vector<std::string>& textures)
 	}
 	unsigned int id = Texture::LoadCubeMap(textures);
 	modelTextures.push_back(Texture(id, TextureType::CubeMap, textures[0].c_str()));
-	Mesh mesh = Mesh(skybox, NULL, vertices, indices, modelTextures, "skybox");
+	Mesh mesh = Mesh(skybox, NULL, vertices, indices, &modelTextures, "skybox");
 	skybox->AddMesh(mesh);
 
 	return skybox;

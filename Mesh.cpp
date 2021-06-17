@@ -87,7 +87,7 @@ Shader* Material::GetShader()
 	return shader;
 }
 
-float Material::GetProperty(MaterialProp property)
+float Material::GetProperty(MaterialProp property) const
 {
 	switch (property)
 	{
@@ -106,7 +106,7 @@ float Material::GetProperty(MaterialProp property)
 	}
 }
 
-glm::vec4 Material::GetColor(MaterialType material)
+glm::vec4 Material::GetColor(MaterialType material) const
 {
 	switch (material)
 	{
@@ -123,6 +123,11 @@ glm::vec4 Material::GetColor(MaterialType material)
 		return glm::vec4(0.0f);
 		break;
 	}
+}
+
+bool Material::HasTransparency()
+{
+	return hasTransparency;
 }
 
 void Material::SetShader(Shader* shader)
@@ -167,26 +172,27 @@ void Material::SetProperty(MaterialProp property, float value)
 	}
 }
 
-bool Material::HasTransparency()
-{
-	return hasTransparency;
-}
-
 void Material::SetTransparencyStatus(bool hasTransparency)
 {
 	this->hasTransparency = hasTransparency;
 }
 
+void Material::AddTexture(const Texture& texture)
+{
+	textures.push_back(texture);
+}
+
 //	Класс Mesh
 
 Mesh::Mesh(const Model* root, const Mesh* parent, const std::vector<Vertex>& vertices, const std::vector<unsigned int>& indices,
-	const std::vector<Texture>& textures, const std::string& name = "mesh")
+	const std::vector<Texture>* textures, const std::string& name = "mesh")
 {
 	this->root = root;
 	this->parent = parent;
 	this->vertices = vertices;
 	this->indices = indices;
-	this->textures = textures;
+	if (textures != NULL)
+		this->material.textures = *textures;
 	this->name = name;
 	position = glm::vec3(0.0f);
 	rotation = glm::vec3(1.0f, 0.0f, 0.0f);
@@ -220,10 +226,6 @@ Mesh::Mesh(const Model* root, const Mesh* parent, const std::vector<Vertex>& ver
 }
 void Mesh::Draw(const Shader& shader)
 {
-	unsigned int diffuseN = 1;
-	unsigned int specularN = 1;
-	unsigned int normalN = 1;
-	unsigned int heightN = 1;
 	shader.use();
 	//	Обновление модельной матрицы меша
 	UpdateModelMatrix();
@@ -238,106 +240,15 @@ void Mesh::Draw(const Shader& shader)
 	case ShaderType::MATERIAL:
 	{
 		const MaterialShader* matShader = (const MaterialShader*)(&shader);
-		matShader->loadMainInfo(root->GetCamera(), &modelMat);
-		matShader->setBool("hasSkybox", false);
-		int i = 0;
-		for (i; i < textures.size(); i++)
-		{
-			std::string name = "material.";
-			switch (textures[i].GetType())
-			{
-			case TextureType::Diffuse:
-				name += "texture_diffuse" + std::to_string(diffuseN++);
-				break;
-			case TextureType::Specular:
-				name += "texture_specular" + std::to_string(specularN++);
-				break;
-			case TextureType::Normal:
-				name += "texture_normal" + std::to_string(normalN++);
-				break;
-			case TextureType::Height:
-				name += "texture_height" + std::to_string(heightN++);
-				break;
-			case TextureType::CubeMap:
-				name = "skybox";
-				matShader->setBool("hasSkybox", true);
-				break;
-			default: continue;
-			}
-			matShader->setInt(name, i);
-			glActiveTexture(GL_TEXTURE0 + i);
-			if (textures[i].GetType() == TextureType::CubeMap)
-			{
-				glBindTexture(GL_TEXTURE_CUBE_MAP, textures[i].GetId());
-			}
-			else
-			{
-				glBindTexture(GL_TEXTURE_2D, textures[i].GetId());
-			}
-		}
-		//	TEST
-		matShader->setInt("shadowMap[0]", i);
-		glActiveTexture(GL_TEXTURE0 + i);
-		glBindTexture(GL_TEXTURE_2D, matShader->shadowMapTexture);
-		//	~TEST
-		matShader->setInt("material.diffTextCount", diffuseN - 1);
-		matShader->setInt("material.specTextCount", specularN - 1);
-		matShader->setInt("material.ambTextCount", heightN - 1);
-		matShader->setVec("material.diffuse", material.GetColor(MaterialType::DIFFUSE));
-		matShader->setVec("material.ambient", material.GetColor(MaterialType::AMBIENT));
-		matShader->setVec("material.specular", material.GetColor(MaterialType::SPECULAR));
-		matShader->setFloat("material.shininess", material.GetProperty(MaterialProp::SHININESS));
-		matShader->setFloat("material.alpha", material.GetProperty(MaterialProp::ALPHA));
-		matShader->setFloat("material.reflectivity", material.GetProperty(MaterialProp::REFLECTIVITY));
-		
-		glBindVertexArray(VAO);
-		glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
-		glBindVertexArray(0);
-		glActiveTexture(GL_TEXTURE0);
-
-		diffuseN = 1;
-		specularN = 1;
-		normalN = 1;
-		heightN = 1;
-		matShader->setBool("hasSkybox", false);
-		for (int i = 0; i < textures.size(); i++)
-		{
-			std::string name = "material.";
-			switch (textures[i].GetType())
-			{
-			case TextureType::Diffuse:
-				name += "texture_diffuse" + std::to_string(diffuseN++);
-				break;
-			case TextureType::Specular:
-				name += "texture_specular" + std::to_string(specularN++);
-				break;
-			case TextureType::Normal:
-				name += "texture_normal" + std::to_string(normalN++);
-				break;
-			case TextureType::Height:
-				name += "texture_height" + std::to_string(heightN++);
-				break;
-			case TextureType::CubeMap:
-				name = "skybox";
-				matShader->setInt(name, 14);
-				continue;
-				break;
-			default: continue;
-			}
-			matShader->setInt(name, 15);
-		}
-		//	TEST
-		matShader->setInt("shadowMap[0]", 15);
-		//	~TEST
+		matShader->loadMainInfo(root->GetCamera(), &modelMat, &material);
+		matShader->draw(VAO, indices.size());
+		matShader->clearSamplers();
 	}; break;
 	case ShaderType::SHADOW_MAP:
 	{
 		const ShadowMapShader* shdMapShader = (const ShadowMapShader*)(&shader);
 		shdMapShader->loadMainInfo(NULL, &modelMat);
-		glBindVertexArray(VAO);
-		glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
-		glBindVertexArray(0);
-		glActiveTexture(GL_TEXTURE0);
+		shdMapShader->draw(VAO, indices.size());
 	}; break;
 	default: break;
 	}
@@ -365,9 +276,9 @@ std::vector<unsigned int>& Mesh::GetIndices()
 	return indices;
 }
 
-std::vector<Texture>& Mesh::GetTextures()
+const std::vector<Texture>* Material::GetTextures() const
 {
-	return textures;
+	return &textures;
 }
 
 Shader* Mesh::GetShader()
