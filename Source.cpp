@@ -175,7 +175,6 @@ int main()
 		gameGlob.ProcessInput();
 		gameGlob.GetMap()->Update(gameGlob.GetDeltaTime());
 		gameGlob.GetMap()->Render();
-		glfwSwapBuffers(gameGlob.GetWindow());
 	}
 	gameGlob.GetMap()->Clear();
 

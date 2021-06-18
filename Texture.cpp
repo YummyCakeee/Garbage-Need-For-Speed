@@ -3,16 +3,18 @@
 Texture::Texture()
 {
 	id = 0;
-	type = TextureType::UNDEFINED;
+	type = TextureType::TEXTURE2D;
+	dataType = TextureDataType::UNDEFINED;
 	path = "";
 	channelsCount = 3;
 	width = 0.0f;
 	height = 0.0f;
 }
 
-Texture::Texture(unsigned int id, TextureType type, const std::string& path, int width, int height, int channelsCount)
+Texture::Texture(unsigned int id, TextureDataType dataType, TextureType type, const std::string& path, int width, int height, int channelsCount)
 {
 	this->id = id;
+	this->dataType = dataType;
 	this->type = type;
 	this->path = path;
 	this->channelsCount = channelsCount;
@@ -23,6 +25,11 @@ Texture::Texture(unsigned int id, TextureType type, const std::string& path, int
 unsigned int Texture::GetId() const
 {
 	return id;
+}
+
+TextureDataType Texture::GetDataType() const
+{
+	return dataType;
 }
 
 TextureType Texture::GetType() const
@@ -48,6 +55,11 @@ int Texture::GetWidth() const
 int Texture::GetHeight() const
 {
 	return height;
+}
+
+void Texture::SetDataType(TextureDataType dataType)
+{
+	this->dataType = dataType;
 }
 
 void Texture::SetType(TextureType type)
@@ -78,6 +90,11 @@ void Texture::SetHeight(int height)
 	else this->height = height;
 }
 
+void Texture::Delete()
+{
+	glDeleteTextures(1, &id);
+}
+
 Texture Texture::LoadTexture(const std::string& path, bool useSRGB)
 {
 	GLuint texture;
@@ -91,7 +108,7 @@ Texture Texture::LoadTexture(const std::string& path, bool useSRGB)
 		std::cout << "ERROR:: Couldn't load texture:: Path:" + path;
 		glBindTexture(GL_TEXTURE_2D, 0);
 		glDeleteTextures(1, &texture);
-		return Texture(0, TextureType::UNDEFINED, path);
+		return Texture(0, TextureDataType::UNDEFINED, TextureType::TEXTURE2D, path);
 	}
 	switch (channels)
 	{
@@ -120,18 +137,18 @@ Texture Texture::LoadTexture(const std::string& path, bool useSRGB)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glBindTexture(GL_TEXTURE_2D, 0);
 	SOIL_free_image_data(image);
-	return Texture(texture, TextureType::UNDEFINED, path, textureWdth, textureHght, channels);
+	return Texture(texture, TextureDataType::UNDEFINED, TextureType::TEXTURE2D, path, textureWdth, textureHght, channels);
 }
 
-Texture Texture::CreateEmptyTexture(int width, int height, TextureType type)
+Texture Texture::CreateEmptyTexture(int width, int height, TextureDataType dataType, TextureType type)
 {
 	unsigned int texture;
 	
 	glGenTextures(1, &texture);
 	glBindTexture(GL_TEXTURE_2D, texture);
-	switch (type)
+	switch (dataType)
 	{
-	case TextureType::DEPTH:
+	case TextureDataType::DEPTH:
 	{
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
 			width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
@@ -142,7 +159,7 @@ Texture Texture::CreateEmptyTexture(int width, int height, TextureType type)
 		float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
 		glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
 	}; break;
-	case TextureType::STENCIL:
+	case TextureDataType::STENCIL:
 	{
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_STENCIL_INDEX,
 			width, height, 0, GL_STENCIL_INDEX, GL_UNSIGNED_BYTE, NULL);
@@ -164,7 +181,7 @@ Texture Texture::CreateEmptyTexture(int width, int height, TextureType type)
 	
 	glBindTexture(GL_TEXTURE_2D, 0);
 
-	return Texture(texture, type, "", width, height);
+	return Texture(texture, dataType, type, "", width, height);
 }
 
 unsigned int Texture::LoadCubeMap(const std::vector<std::string>& pathes)

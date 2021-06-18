@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <time.h>
 #include <map>
+#include <list>
 #include <string>
 #include <tinyxml2/tinyxml2.h>
 #include "Object.h"

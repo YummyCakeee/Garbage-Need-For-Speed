@@ -16,6 +16,7 @@ protected:
 	glm::vec3 specular;
 	SourceType type;
 	bool enabled;
+	glm::vec3 GetUpDirection(glm::vec3 direction, glm::vec3 WorldUp) const;
 public:
 	LightSource();
 	LightSource(glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular);
@@ -111,4 +112,6 @@ public:
 	glm::vec3 GetStartDirection() const;
 	float GetCutOff() const;
 	float GetOuterCutOff() const;
+	virtual glm::mat4 GetProjectionMatrix() const override;
+	glm::mat4 GetViewMatrix() const;
 };

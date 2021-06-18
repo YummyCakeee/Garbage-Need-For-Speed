@@ -197,10 +197,10 @@ void Shader::clear()
 	clearShaderInfo();
 }
 
-LightInfo::LightInfo(const std::vector<glm::mat4>& lightSpaceMats, const std::vector<unsigned int>& shadowMapsID, SourceType type)
+LightInfo::LightInfo(const std::vector<glm::mat4>& lightSpaceMats, unsigned int shadowMapsID, SourceType type)
 {
 	this->lightSpaceMats = lightSpaceMats;
-	this->shadowMapsID = shadowMapsID;
+	this->shadowMapID = shadowMapsID;
 	this->type = type;
 }
 
@@ -270,23 +270,29 @@ void MaterialShader::loadMaterial(const Material* material) const
 				std::string name = "material.";
 				switch ((*textures)[i].GetType())
 				{
-				case TextureType::Diffuse:
-					if (diffuseN > 2) continue;
-					name += "texture_diffuse" + std::to_string(diffuseN++);
-					break;
-				case TextureType::Specular:
-					if (specularN > 2) continue;
-					name += "texture_specular" + std::to_string(specularN++);
-					break;
-				case TextureType::Normal:
-					if (normalN > 2) continue;
-					name += "texture_normal" + std::to_string(normalN++);
-					break;
-				case TextureType::Height:
-					if (heightN > 2) continue;
-					name += "texture_height" + std::to_string(heightN++);
-					break;
-				case TextureType::CubeMap:
+				case TextureType::TEXTURE2D:
+				{
+					switch ((*textures)[i].GetDataType())
+					{
+					case TextureDataType::DIFFUSE:
+						if (diffuseN > 2) continue;
+						name += "texture_diffuse" + std::to_string(diffuseN++);
+						break;
+					case TextureDataType::SPECULAR:
+						if (specularN > 2) continue;
+						name += "texture_specular" + std::to_string(specularN++);
+						break;
+					case TextureDataType::NORMAL:
+						if (normalN > 2) continue;
+						name += "texture_normal" + std::to_string(normalN++);
+						break;
+					case TextureDataType::HEIGHT:
+						if (heightN > 2) continue;
+						name += "texture_height" + std::to_string(heightN++);
+						break;
+					}
+				}; break;
+				case TextureType::CUBEMAP:
 					if (cubeMapN > 1) continue;
 					name = "skybox";
 					setBool("hasSkybox", true);
@@ -297,7 +303,7 @@ void MaterialShader::loadMaterial(const Material* material) const
 				setInt(name, samplerIndex);
 				glActiveTexture(GL_TEXTURE0 + samplerIndex);
 				samplerIndex++;
-				if ((*textures)[i].GetType() == TextureType::CubeMap)
+				if ((*textures)[i].GetType() == TextureType::CUBEMAP)
 				{
 					glBindTexture(GL_TEXTURE_CUBE_MAP, (*textures)[i].GetId());
 				}
@@ -350,13 +356,13 @@ void MaterialShader::loadLightsInfo(const std::list<LightInfo>*) const
 			setMatrix4F("dLightSpaceMatrix[" + std::to_string(dLightsIndex) + "]", lightSpaceMat);
 			setInt("dLightShadowMaps[" + std::to_string(dLightsIndex) + "]", i);
 			glActiveTexture(GL_TEXTURE0 + i);
-			glBindTexture(GL_TEXTURE_2D, it->shadowMapsID[0]);
+			glBindTexture(GL_TEXTURE_2D, it->shadowMapID);
 			dLightsIndex++;
-		}
+		}; break;
 		case SourceType::POINT:
 		{
 
-		}
+		}; break;
 		case SourceType::SPOTLIGHT:
 		{
 			glm::mat4 lightSpaceMat = glm::mat4(1.0f);
@@ -365,9 +371,9 @@ void MaterialShader::loadLightsInfo(const std::list<LightInfo>*) const
 			setMatrix4F("sLightSpaceMatrix[" + std::to_string(sLightsIndex) + "]", lightSpaceMat);
 			setInt("sLightShadowMaps[" + std::to_string(sLightsIndex) + "]", i);
 			glActiveTexture(GL_TEXTURE0 + i);
-			glBindTexture(GL_TEXTURE_2D, it->shadowMapsID[0]);
+			glBindTexture(GL_TEXTURE_2D, it->shadowMapID);
 			sLightsIndex++;
-		}
+		}; break;
 		default:
 			break;
 		}
@@ -400,16 +406,29 @@ void MaterialShader::clearSamplers() const
 {
 	use();
 	setBool("hasSkybox", false);
+	//	Очистка текстур материала
 	std::string name = "material.";
 	for (int i = 1; i <= 2; i++)
 	{
-		setInt("material.texture_diffuse" + std::to_string(i), 15);
-		setInt("material.texture_specular" + std::to_string(i), 15);
-		setInt("material.texture_normal" + std::to_string(i), 15);
-		setInt("material.texture_height" + std::to_string(i), 15);
+		setInt("material.texture_diffuse" + std::to_string(i), 30);
+		setInt("material.texture_specular" + std::to_string(i), 30);
+		setInt("material.texture_normal" + std::to_string(i), 30);
+		setInt("material.texture_height" + std::to_string(i), 30);
 	}
-	setInt("skybox", 14);
-	setInt("dLightShadowMaps[0]", 14);
+	setInt("skybox", 31);
+	//	Очистка карт теней
+	for (int i = 0; i < 1; i++)
+	{
+		setInt("dLightShadowMaps[" + std::to_string(i) + "]", 30);
+	}
+	for (int i = 0; i < 2; i++)
+	{
+		setInt("pLightShadowMaps[" + std::to_string(i) + "]", 31); 
+	}
+	for (int i = 0; i < 8; i++)
+	{
+		setInt("sLightShadowMaps[" + std::to_string(i) + "]", 30);
+	}
 }
 
 void MaterialShader::clearShaderInfo()
@@ -647,7 +666,7 @@ void LightsUBO::GenerateBuffer(const Shader& shader)
 	glBindBufferBase(GL_UNIFORM_BUFFER, 0, lightsUBO);
 }
 
-void LightsUBO::LoadInfo(const std::vector<const LightSource*>& lights)
+void LightsUBO::LoadInfo(const std::vector<const LightSource*>& lights) const
 {
 	int loadDirLghtCnt = 0;
 	int loadPntLghtCnt = 0;
@@ -726,4 +745,19 @@ void LightsUBO::LoadInfo(const std::vector<const LightSource*>& lights)
 
 	//	Отвязка буфера
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+}
+
+int LightsUBO::GetDirLightsCount() const
+{
+	return dirLightsCnt;
+}
+
+int LightsUBO::GetPointLightsCount() const
+{
+	return pntLightsCnt;
+}
+
+int LightsUBO::GetSpotLightsCount() const
+{
+	return sptLightsCnt;
 }

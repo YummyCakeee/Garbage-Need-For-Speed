@@ -159,13 +159,13 @@ Mesh Model::ProcessMesh(aiMesh* mesh, const aiScene* scene)
 	}
 
 	aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
-	std::vector<Texture> diffuseMaps = LoadMaterialTextures(material, aiTextureType_DIFFUSE, TextureType::Diffuse);
+	std::vector<Texture> diffuseMaps = LoadMaterialTextures(material, aiTextureType_DIFFUSE, TextureDataType::DIFFUSE);
 	textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
-	std::vector<Texture> specularMaps = LoadMaterialTextures(material, aiTextureType_SPECULAR, TextureType::Specular);
+	std::vector<Texture> specularMaps = LoadMaterialTextures(material, aiTextureType_SPECULAR, TextureDataType::SPECULAR);
 	textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
-	std::vector<Texture> normalMaps = LoadMaterialTextures(material, aiTextureType_HEIGHT, TextureType::Normal);
+	std::vector<Texture> normalMaps = LoadMaterialTextures(material, aiTextureType_HEIGHT, TextureDataType::NORMAL);
 	textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
-	std::vector<Texture> heightMaps = LoadMaterialTextures(material, aiTextureType_AMBIENT, TextureType::Height);
+	std::vector<Texture> heightMaps = LoadMaterialTextures(material, aiTextureType_AMBIENT, TextureDataType::HEIGHT);
 	textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
 
 	Mesh resultMesh = Mesh(this, NULL, vertices, indices, &textures, mesh->mName.C_Str());
@@ -193,7 +193,7 @@ Mesh Model::ProcessMesh(aiMesh* mesh, const aiScene* scene)
 	return resultMesh;
 }
 
-std::vector<Texture> Model::LoadMaterialTextures(aiMaterial* material, aiTextureType aiType, TextureType type)
+std::vector<Texture> Model::LoadMaterialTextures(aiMaterial* material, aiTextureType aiType, TextureDataType dataType)
 {
 	std::vector<Texture> textures;
 
@@ -218,9 +218,9 @@ std::vector<Texture> Model::LoadMaterialTextures(aiMaterial* material, aiTexture
 		if (!loaded)
 		{
 			bool loadSRGB = false;
-			if (type == TextureType::Diffuse) loadSRGB = true;
+			if (dataType == TextureDataType::DIFFUSE) loadSRGB = true;
 			Texture texture = Texture::LoadTexture(std::string(directory + "\\" + path.C_Str()), loadSRGB);
-			texture.SetType(type);
+			texture.SetDataType(dataType);
 			textures.push_back(texture);
 		}
 	}
@@ -363,9 +363,10 @@ Model* Model::CreatePlane(float width, float length, const std::string& name, st
 			{
 				texture = Texture::LoadTexture(textures[0][i].GetPath());
 				texture.SetType(textures[0][i].GetType());
+				texture.SetDataType(textures[0][i].GetDataType());
 			}
 			else
-				texture = Texture(textures[0][i].GetId(), textures[0][i].GetType(), textures[0][i].GetPath());
+				texture = Texture(textures[0][i].GetId(), textures[0][i].GetDataType(), textures[0][i].GetType(), textures[0][i].GetPath());
 			modelTextures.push_back(texture);
 		}
 	}
@@ -457,9 +458,10 @@ Model* Model::CreateCube(glm::vec3 scale, const std::string& name, std::vector<T
 			{
 				texture = Texture::LoadTexture(textures[0][i].GetPath());
 				texture.SetType(textures[0][i].GetType());
+				texture.SetDataType(textures[0][i].GetDataType());
 			}
 			else
-				texture = Texture(textures[0][i].GetId(), textures[0][i].GetType(), textures[0][i].GetPath());
+				texture = Texture(textures[0][i].GetId(), textures[0][i].GetDataType(), textures[0][i].GetType(), textures[0][i].GetPath());
 			modelTextures.push_back(texture);
 		}
 	}
@@ -537,7 +539,7 @@ Model* Model::CreateSkybox(const std::vector<std::string>& textures)
 		indices.push_back(i);
 	}
 	unsigned int id = Texture::LoadCubeMap(textures);
-	modelTextures.push_back(Texture(id, TextureType::CubeMap, textures[0].c_str()));
+	modelTextures.push_back(Texture(id, TextureDataType::DIFFUSE, TextureType::CUBEMAP, textures[0].c_str()));
 	Mesh mesh = Mesh(skybox, NULL, vertices, indices, &modelTextures, "skybox");
 	skybox->AddMesh(mesh);
 

@@ -56,9 +56,9 @@ public:
 struct LightInfo
 {
 	std::vector<glm::mat4> lightSpaceMats;
-	std::vector<unsigned int> shadowMapsID;
+	unsigned int shadowMapID;
 	SourceType type;
-	LightInfo(const std::vector<glm::mat4>& lightSpaceMats, const std::vector<unsigned int>& shadowMapsID, SourceType type);
+	LightInfo(const std::vector<glm::mat4>& lightSpaceMats, unsigned int, SourceType type);
 };
 
 struct MaterialShaderInfo
@@ -128,5 +128,8 @@ public:
 	LightsUBO();
 	LightsUBO(const Shader& shader, int dirLightsCnt, int pntLightsCnt, int sptLightsCnt);
 	~LightsUBO();
-	void LoadInfo(const std::vector<const LightSource*>& lights);
+	void LoadInfo(const std::vector<const LightSource*>& lights) const;
+	int GetDirLightsCount() const;
+	int GetPointLightsCount() const;
+	int GetSpotLightsCount() const;
 };

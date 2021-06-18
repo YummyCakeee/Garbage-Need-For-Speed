@@ -94,7 +94,9 @@ void FrameBuffer::Render() const
 		((ScreenShader*)shader)->loadMainInfo();
 	}
 	glBindVertexArray(sfVAO);
-	glBindTexture(GL_TEXTURE_2D, texture.GetId());
+	if (boundTexture != NULL)
+		glBindTexture(GL_TEXTURE_2D, boundTexture->GetId());
+	else glBindTexture(GL_TEXTURE_2D, texture.GetId());
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
@@ -152,7 +154,7 @@ DepthFrameBuffer::~DepthFrameBuffer()
 void DepthFrameBuffer::SetupBuffer()
 {
 	Bind();
-	texture = Texture::CreateEmptyTexture(width, height, TextureType::DEPTH);
+	texture = Texture::CreateEmptyTexture(width, height, TextureDataType::DEPTH, TextureType::TEXTURE2D);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, texture.GetId(), 0);
 	glDrawBuffer(GL_NONE);
 	glReadBuffer(GL_NONE);

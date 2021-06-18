@@ -74,8 +74,8 @@ void Map::Initialize()
 	//	Создание дороги
 
 	std::vector<Texture> roadTextures;
-	roadTextures.push_back(Texture(0, TextureType::Diffuse, "textures/road/asphalt_road_D.png"));
-	roadTextures.push_back(Texture(0, TextureType::Specular, "textures/road/asphalt_road_wet_S.png"));
+	roadTextures.push_back(Texture(0, TextureDataType::DIFFUSE, TextureType::TEXTURE2D, "textures/road/asphalt_road_D.png"));
+	roadTextures.push_back(Texture(0, TextureDataType::SPECULAR, TextureType::TEXTURE2D, "textures/road/asphalt_road_wet_S.png"));
 	Model* roadModel = Model::CreatePlane(7.0f, 7.0f, "road_section", &roadTextures, true);
 	models.insert(std::make_pair("road_section", roadModel));
 	roadModel->SetGlobalShader(game->shaders.find("standart")->second);
@@ -341,32 +341,72 @@ void Map::ActBots(double dTime)
 void Map::Render()
 {	
 	//	Отрисовка карт теней
-	//	Привязка буфера глубины
-	game->depthBuffer->Bind();
-	game->depthBuffer->PrepareForRender();
-	ShadowMapShader* shdMapShader = (ShadowMapShader*)(game->shaders.find("depth")->second);
-	DirLight* dLight = (DirLight*)lights[lights.size() - 1];
-	glm::mat4 lightSpaceMat = (dLight)->GetProjectionMatrix() * 
-		(dLight)->GetViewMatrix(camera->GetPosition() - dLight->GetDirection() * 25.0f);
-	shdMapShader->setLightSpaceAndModelMatrix(&lightSpaceMat, NULL);
-	for (int i = 0; i < objects.size(); i++)
-	{
-		objects[i]->Draw(shdMapShader);
-	}
-	//game->depthBuffer->Render();
-	game->depthBuffer->Unbind();
-
-	//	Передача в шейдер карт теней и матриц пространства источников света
 	MaterialShader* matShader = (MaterialShader*)(game->shaders.find("standart")->second);
+	ShadowMapShader* shdMapShader = (ShadowMapShader*)(game->shaders.find("depth")->second);
+	std::list<Texture> shadowMaps;
 	for (auto it = activeLights.begin(); it != activeLights.end(); it++)
 	{
-		std::vector<glm::mat4> lSpaceMats;
-		lSpaceMats.push_back(lightSpaceMat);
-		std::vector<unsigned int> shadowMapsID;
-		shadowMapsID.push_back(game->depthBuffer->GetTexture().GetId());
-		matShader->addLightInfo(LightInfo(lSpaceMats, shadowMapsID, SourceType::DIRECTIONAL));
+		switch ((*it)->GetType())
+		{
+		case SourceType::DIRECTIONAL:
+		{
+			DirLight* dLight = (DirLight*)(*it);
+			Texture shadowMap = Texture::CreateEmptyTexture(8092, 8092, TextureDataType::DEPTH);
+			shadowMaps.push_back(shadowMap);
+			game->depthBuffer->BindTexture(&shadowMap);
+			//	Привязка буфера глубины
+			game->depthBuffer->Bind();
+			game->depthBuffer->PrepareForRender();
+			//	Утсановка матрица пространства света
+			glm::mat4 lightSpaceMat = dLight->GetProjectionMatrix() *
+				dLight->GetViewMatrix(camera->GetPosition() - dLight->GetDirection() * 25.0f);
+			shdMapShader->setLightSpaceAndModelMatrix(&lightSpaceMat, NULL);
+			for (int i = 0; i < objects.size(); i++)
+			{
+				objects[i]->Draw(shdMapShader);
+			}
+			game->depthBuffer->Unbind();
+			//	Матрицы пространства (одна для данного типа источника света)
+			std::vector<glm::mat4> lSpaceMats;
+			lSpaceMats.push_back(lightSpaceMat);
+			//	Идентификаторы карт теней (одна для данного типа источника света)
+			unsigned int shadowMapID = game->depthBuffer->GetBoundTexture()->GetId();
+			//	Передача в шейдер карт теней и матриц пространства источников света
+			matShader->addLightInfo(LightInfo(lSpaceMats, shadowMapID, SourceType::DIRECTIONAL));
+		}; break;
+		case SourceType::POINT:
+		{
+
+		}; break;
+		case SourceType::SPOTLIGHT:
+		{
+			SpotLight* sLight = (SpotLight*)(*it);
+			Texture shadowMap = Texture::CreateEmptyTexture(1024, 1024, TextureDataType::DEPTH);
+			shadowMaps.push_back(shadowMap);
+			game->depthBuffer->BindTexture(&shadowMap);
+			//	Привязка буфера глубины
+			game->depthBuffer->Bind();
+			game->depthBuffer->PrepareForRender();
+			//	Утсановка матрица пространства света
+			glm::mat4 lightSpaceMat = sLight->GetProjectionMatrix() * sLight->GetViewMatrix();
+			shdMapShader->setLightSpaceAndModelMatrix(&lightSpaceMat, NULL);
+			for (int i = 0; i < objects.size(); i++)
+			{
+				objects[i]->Draw(shdMapShader);
+			}
+			game->depthBuffer->Unbind();
+			//	Матрицы пространства (одна для данного типа источника света)
+			std::vector<glm::mat4> lSpaceMats;
+			lSpaceMats.push_back(lightSpaceMat);
+			//	Идентификаторы карт теней (одна для данного типа источника света)
+			unsigned int shadowMapID = game->depthBuffer->GetBoundTexture()->GetId();
+			//	Передача в шейдер карт теней и матриц пространства источников света
+			matShader->addLightInfo(LightInfo(lSpaceMats, shadowMapID, SourceType::SPOTLIGHT));
+		}; break;
+		default: break;
+		}
+		
 	}
-	//	~TEST
 
 	//	Привязка экранного кадрового буфера
 	game->screenBuffer->Bind();
@@ -379,7 +419,11 @@ void Map::Render()
 	}
 	//	Вывод экранного буфера на экран
 	game->screenBuffer->Render();
-	
+	glfwSwapBuffers(game->window);
+	for (auto it = shadowMaps.begin(); it != shadowMaps.end(); it++)
+	{
+		it->Delete();
+	}
 }
 
 void Map::QuickCameraSetUp(Camera* camera)
@@ -458,8 +502,7 @@ void Map::Update(float dTime)
 			lightsDistances.push_back(std::make_pair(i, 0.0f));
 			continue;
 		}
-		default:
-			continue;
+		default: continue;
 		}
 		glm::vec3 lightDir = glm::normalize(lightPos - camPos);
 		glm::vec3 crossRes = glm::cross(lightDir, camDir);
@@ -481,9 +524,28 @@ void Map::Update(float dTime)
 	};
 
 	lightsDistances.sort(cmp);
-
+	unsigned int dLightsCnt = 0;
+	unsigned int pLightsCnt = 0;
+	unsigned int sLightsCnt = 0;
 	for (auto it = lightsDistances.begin(); it != lightsDistances.end(); it++)
 	{
+		if (!lights[it->first]->IsEnabled()) continue;
+		switch (lights[it->first]->GetType())
+		{
+		case SourceType::DIRECTIONAL:
+		{
+			if (dLightsCnt++ >= lightsUbo.GetDirLightsCount()) continue;
+		}; break;
+		case SourceType::POINT:
+		{
+			if (pLightsCnt++ >= lightsUbo.GetPointLightsCount()) continue;
+		}; break;
+		case SourceType::SPOTLIGHT:
+		{
+			if (sLightsCnt++ >= lightsUbo.GetSpotLightsCount()) continue;
+		}; break;
+		default: break;
+		}
 		activeLights.push_back(lights[it->first]);
 	}
 	lightsUbo.LoadInfo(activeLights);

@@ -18,6 +18,12 @@ LightSource::LightSource(glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specula
 	enabled = true;
 }
 
+glm::vec3 LightSource::GetUpDirection(glm::vec3 direction, glm::vec3 WorldUp) const
+{
+	glm::vec3 right = glm::normalize(glm::cross(direction, WorldUp));
+	return glm::normalize(glm::cross(right, direction));
+}
+
 void LightSource::SetAmbient(glm::vec3 ambient)
 {
 	this->ambient = glm::clamp(ambient, glm::vec3(0.0f), glm::vec3(1.0f));
@@ -355,4 +361,14 @@ float SpotLight::GetCutOff() const
 float SpotLight::GetOuterCutOff() const
 {
 	return outerCutOff;
+}
+
+glm::mat4 SpotLight::GetProjectionMatrix() const
+{
+	return glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 25.0f);
+}
+
+glm::mat4 SpotLight::GetViewMatrix() const
+{
+	return glm::lookAt(position, position + direction, GetUpDirection(direction, glm::vec3(0.0f, 1.0f, 0.0f)));
 }

@@ -17,6 +17,7 @@ Camera::Camera(glm::vec3 position, glm::vec3 worldUp, float yaw, float pitch)
 	mode = CameraMode::UNIMPLEMENTED;
 	UpdateCameraVectors();
 }
+
 Camera::Camera(float poxX, float posY, float posZ, float worldUpX, float worldUpY, float worldUpZ, float yaw, float pitch)
 {
 	position = glm::vec3(poxX, posY, posZ);

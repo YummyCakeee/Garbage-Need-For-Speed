@@ -1,8 +1,12 @@
 #version 450 core
 
-#define NR_DIR_LIGHTS 1
-#define NR_POINT_LIGHTS 4
-#define NR_SPOT_LIGHTS 8
+const int NR_DIR_LIGHTS = 1;
+const int NR_POINT_LIGHTS = 4;
+const int NR_SPOT_LIGHTS = 8;
+
+const uint DL_TYPE = 0x00000001u;
+const uint PL_TYPE = 0x00000002u;
+const uint SL_TYPE = 0x00000004u;
 
 out vec4 FragColor;
 in VS_OUT
@@ -82,6 +86,8 @@ layout (shared, binding = 0) uniform DirLightsInfo
 	SpotLight spotLights[NR_SPOT_LIGHTS];
 };
 
+
+
 uniform vec3 viewPos;
 uniform Material material;
 uniform samplerCube skybox;
@@ -93,7 +99,7 @@ uniform sampler2D sLightShadowMaps[NR_SPOT_LIGHTS];
 vec4 CalcDirLight(int lightIndex, vec3 normal, vec3 viewDir);
 vec4 CalcPointLight(int lightIndex, vec3 normal, vec3 viewDir);
 vec4 CalcSpotLight(int lightIndex, vec3 normal, vec3 viewDir);
-float CalcShadow(vec4 fragPos, vec3 normal, vec3 lightDir);
+float CalcShadow(vec4 fragPos, vec3 normal, vec3 lightDir, uint SourceType, int lightIndex);
 
 ActiveMaterial activeMat = ActiveMaterial(vec4(0.0), vec4(0.0), vec4(0.0), 0.0f, 0.0f);
 
@@ -161,10 +167,9 @@ void main()
 		FragColor += CalcSpotLight(i, normal, viewDir) / max(pow(length(viewPos - spotLights[i].position) + 1.0f, 2.0f) / 100.0f, 1.0f);	
 	}
 	FragColor.a = activeMat.diffuse.a;
+
 	//	Final Mix
-
 	//	Reflections Calculating
-
 	if (hasSkybox)
 	{
 		vec3 R = reflect(-viewDir, normal);
@@ -185,7 +190,7 @@ vec4 CalcDirLight(int lightIndex, vec3 normal, vec3 viewDir)
 	//	specular
 	vec4 specular = vec4(pow(max(dot(normal, halfWayDir), 0.0), activeMat.shininess) * dirLights[i].specular, 1.0f) * activeMat.specular;
 	//	shadow
-	float shadow = CalcShadow(fs_in.FragPosDLightSpaces[0], normal, lightDir);
+	float shadow = CalcShadow(fs_in.FragPosDLightSpaces[lightIndex], normal, lightDir, DL_TYPE, lightIndex);
 
 	return ambient + (diffuse + specular) * (1.0f - shadow);
 }
@@ -227,11 +232,12 @@ vec4 CalcSpotLight(int lightIndex, vec3 normal, vec3 viewDir)
 	float theta = dot(lightDir, normalize(-spotLights[i].direction));
 	float epsilon = spotLights[i].cutOff - spotLights[i].outerCutOff;
 	float intensity = clamp((theta - spotLights[i].outerCutOff)/epsilon, 0.0f, 1.0f);
+	float shadow = CalcShadow(fs_in.FragPosSLightSpaces[lightIndex], normal, lightDir, SL_TYPE, lightIndex);
 
-	return ((diffuse + specular) * intensity + ambient) * attenuation;
+	return (ambient + (diffuse + specular) * intensity * (1.0f - shadow)) * attenuation;
 }
 
-float CalcShadow(vec4 fragPos, vec3 normal, vec3 lightDir)
+float CalcShadow(vec4 fragPos, vec3 normal, vec3 lightDir, uint SourceType, int lightIndex)
 {
 	vec3 projCoords = fragPos.xyz / fragPos.w;
 	projCoords = projCoords * 0.5f + 0.5f;
@@ -239,12 +245,34 @@ float CalcShadow(vec4 fragPos, vec3 normal, vec3 lightDir)
 	float currentDepth = projCoords.z;
 	float bias = max(0.01 * (1.0f - dot(normal, lightDir)), 0.005f);
 	float shadow = 0.0f;
-	vec2 texelSize = 1.0f / textureSize(dLightShadowMaps[0], 0);
-	for (int x = -1; x <= 1; ++x)
-		for (int y = -1; y <= 1; ++y)
+
+	switch (SourceType)
+	{
+		case DL_TYPE:
 		{
-			float pcfDepth = texture(dLightShadowMaps[0], projCoords.xy + vec2(x, y) * texelSize).r;
-			shadow += currentDepth - bias > pcfDepth ? 1.0f : 0.0f;
-		}
+			vec2 texelSize = 1.0f / textureSize(dLightShadowMaps[lightIndex], 0);
+			for (int x = -1; x <= 1; ++x)
+			for (int y = -1; y <= 1; ++y)
+			{
+				float pcfDepth = texture(dLightShadowMaps[lightIndex], projCoords.xy + vec2(x, y) * texelSize).r;
+				shadow += currentDepth - bias > pcfDepth ? 1.0f : 0.0f;
+			}
+		}; break;
+		case PL_TYPE:
+		{
+
+		}; break;
+		case SL_TYPE:
+		{
+			vec2 texelSize = 1.0f / textureSize(sLightShadowMaps[lightIndex], 0);
+			for (int x = -1; x <= 1; ++x)
+			for (int y = -1; y <= 1; ++y)
+			{
+				float pcfDepth = texture(sLightShadowMaps[lightIndex], projCoords.xy + vec2(x, y) * texelSize).r;
+				shadow += currentDepth - bias > pcfDepth ? 1.0f : 0.0f;
+			}
+		}; break;
+		default: break;
+	};
 	return shadow / 9.0f;
 }
