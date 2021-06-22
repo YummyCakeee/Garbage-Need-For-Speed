@@ -142,8 +142,19 @@ Texture Texture::LoadTexture(const std::string& path, bool useSRGB)
 
 Texture Texture::CreateEmptyTexture(int width, int height, TextureDataType dataType, TextureType type)
 {
+	switch (type)
+	{
+	case TextureType::TEXTURE2D:
+		return CreateEmpty2DTexture(width, height, dataType);
+	case TextureType::CUBEMAP:
+		return CreateEmptyCubeMapTexture(width, height, dataType);
+	}
+}
+
+Texture Texture::CreateEmpty2DTexture(int width, int height, TextureDataType dataType)
+{
 	unsigned int texture;
-	
+
 	glGenTextures(1, &texture);
 	glBindTexture(GL_TEXTURE_2D, texture);
 	switch (dataType)
@@ -178,10 +189,35 @@ Texture Texture::CreateEmptyTexture(int width, int height, TextureDataType dataT
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	}; break;
 	}
-	
 	glBindTexture(GL_TEXTURE_2D, 0);
 
-	return Texture(texture, dataType, type, "", width, height);
+	return Texture(texture, dataType, TextureType::TEXTURE2D, "", width, height);
+}
+
+Texture Texture::CreateEmptyCubeMapTexture(int width, int height, TextureDataType dataType)
+{
+	unsigned int texture;
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, texture);
+
+	switch (dataType)
+	{
+	case TextureDataType::DEPTH:
+	{
+		for (int i = 0; i < 6; i++)
+			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	};	break;
+	default:
+		break;
+	}
+	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+
+	return Texture(texture, dataType, TextureType::CUBEMAP, "", width, height);
 }
 
 unsigned int Texture::LoadCubeMap(const std::vector<std::string>& pathes)

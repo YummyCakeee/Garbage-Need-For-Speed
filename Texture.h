@@ -46,5 +46,7 @@ public:
 	void Delete();
 	static Texture LoadTexture(const std::string& path, bool useSRGB = false);
 	static Texture CreateEmptyTexture(int width, int height, TextureDataType dataType = TextureDataType::COLOR, TextureType type = TextureType::TEXTURE2D);
+	static Texture CreateEmpty2DTexture(int width, int height, TextureDataType dataType = TextureDataType::COLOR);
+	static Texture CreateEmptyCubeMapTexture(int width, int height, TextureDataType dataType = TextureDataType::COLOR);
 	static unsigned int LoadCubeMap(const std::vector<std::string>& pathes);
 };

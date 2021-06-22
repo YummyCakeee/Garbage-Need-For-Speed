@@ -56,6 +56,11 @@ glm::mat4 Camera::GetProjectionMatrix() const
 	return glm::perspective(glm::radians(fov), aspectRatio, zNear, zFar);
 }
 
+glm::mat4 Camera::GetSpaceMatrix() const
+{
+	return GetProjectionMatrix() * GetViewMatrix();
+}
+
 void Camera::Move(int32_t directions, float dTime)
 {
 	glm::vec3 dir = glm::vec3(0.0f);

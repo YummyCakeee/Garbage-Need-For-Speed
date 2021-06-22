@@ -64,7 +64,7 @@ void FrameBuffer::Unbind() const
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void FrameBuffer::BindTexture(const Texture* texture)
+void FrameBuffer::BindTexture(const Texture& texture)
 {
 }
 
@@ -165,16 +165,27 @@ void DepthFrameBuffer::SetupBuffer()
 	Unbind();
 }
 
-void DepthFrameBuffer::BindTexture(const Texture* texture)
+void DepthFrameBuffer::BindTexture(const Texture& texture)
 {
 	Bind();
-	boundTexture = texture;
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, boundTexture->GetId(), 0);
+	boundTexture = &texture;
+	switch (texture.GetType())
+	{
+	case TextureType::TEXTURE2D:
+	{
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, boundTexture->GetId(), 0);
+	}; break;
+	case TextureType::CUBEMAP:
+	{
+		glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, boundTexture->GetId(), 0);
+	}; break;
+	}
 	Unbind();
 }
 
 void DepthFrameBuffer::UnbindTexture()
 {
+	if (boundTexture == NULL) return;
 	Bind();
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, texture.GetId(), 0);
 	boundTexture = NULL;

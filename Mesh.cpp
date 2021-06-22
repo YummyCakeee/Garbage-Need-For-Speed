@@ -240,14 +240,17 @@ void Mesh::Draw(const Shader& shader)
 	case ShaderType::MATERIAL:
 	{
 		const MaterialShader* matShader = (const MaterialShader*)(&shader);
-		matShader->loadMainInfo(root->GetCamera(), &modelMat, &material);
+		Camera* cam = root->GetCamera();
+		if (cam != NULL)
+			matShader->loadMainInfo(&cam->GetPosition(), &cam->GetSpaceMatrix(), &modelMat, &material);
+		else matShader->loadMainInfo(NULL, NULL, &modelMat, &material);
 		matShader->draw(VAO, indices.size());
 		matShader->clearSamplers();
 	}; break;
 	case ShaderType::SHADOW_MAP:
 	{
 		const ShadowMapShader* shdMapShader = (const ShadowMapShader*)(&shader);
-		shdMapShader->loadMainInfo(NULL, &modelMat);
+		shdMapShader->loadMainInfo(NULL, &modelMat, NULL, 0.0f, &material);
 		shdMapShader->draw(VAO, indices.size());
 	}; break;
 	default: break;

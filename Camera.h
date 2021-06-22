@@ -54,6 +54,7 @@ public:
 	glm::vec3 GetFront() const;
 	glm::mat4 GetViewMatrix() const;
 	glm::mat4 GetProjectionMatrix() const;
+	glm::mat4 GetSpaceMatrix() const;
 	void Move(int32_t directions, float dTime);
 	void Rotate(float xOffset, float yOffset, bool constrainPitch = true, float pitchLimit = 89.0f);
 	void ChangeFov(float value);

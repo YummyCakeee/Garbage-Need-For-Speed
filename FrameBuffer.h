@@ -25,7 +25,7 @@ public:
 	const Texture* GetBoundTexture();
 	void Bind() const;
 	void Unbind() const;
-	virtual void BindTexture(const Texture* texture);
+	virtual void BindTexture(const Texture& texture);
 	virtual void UnbindTexture();
 	void SetShader(const Shader* shader);
 	virtual void PrepareForRender() = 0;
@@ -50,7 +50,7 @@ private:
 public:
 	DepthFrameBuffer(int width, int height, const Shader* shader = NULL);
 	~DepthFrameBuffer();
-	virtual void BindTexture(const Texture* texture) override;
+	virtual void BindTexture(const Texture& texture) override;
 	virtual void UnbindTexture() override;
 	virtual void PrepareForRender() override;
 };

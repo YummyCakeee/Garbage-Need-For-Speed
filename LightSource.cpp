@@ -113,9 +113,9 @@ MovingLight::MovingLight(glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specula
 	this->position = position;
 	isBindToObject = false;
 	offset = glm::vec3(0.0f);
-	constant = 0.0f;
-	linear = 0.0f;
-	quadratic = 0.0f;
+	constant = 1.0f;
+	linear = 0.01f;
+	quadratic = 0.06f;
 	SetAmbient(ambient);
 	SetDiffuse(diffuse);
 	SetSpecular(specular);
@@ -238,6 +238,33 @@ PointLight::PointLight(glm::vec3 position, glm::vec3 ambient, glm::vec3 diffuse,
 	type = SourceType::POINT;
 }
 
+glm::mat4 PointLight::GetProjectionMatrix() const
+{
+	return glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 25.0f);
+}
+
+std::list<glm::mat4> PointLight::GetViewMatrices() const
+{
+	std::list<glm::mat4> faces;
+	faces.push_back(glm::lookAt(position, position + glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
+	faces.push_back(glm::lookAt(position, position + glm::vec3(-1.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0)));
+	faces.push_back(glm::lookAt(position, position + glm::vec3(0.0, 1.0, 0.0), glm::vec3(0.0, 0.0, 1.0)));
+	faces.push_back(glm::lookAt(position, position + glm::vec3(0.0, -1.0, 0.0), glm::vec3(0.0, 0.0, -1.0)));
+	faces.push_back(glm::lookAt(position, position + glm::vec3(0.0, 0.0, 1.0), glm::vec3(0.0, -1.0, 0.0)));
+	faces.push_back(glm::lookAt(position, position + glm::vec3(0.0, 0.0, -1.0), glm::vec3(0.0, -1.0, 0.0)));
+	return faces;
+}
+
+std::list<glm::mat4> PointLight::GetLightSpaceMatrices() const
+{
+	glm::mat4 proj = GetProjectionMatrix();
+	std::list<glm::mat4> view = GetViewMatrices();
+	for (auto it = view.begin(); it != view.end(); it++)
+	{
+		(*it) = proj * (*it);
+	}
+	return view;
+}
 
 //	Directional Light
 
@@ -279,6 +306,11 @@ glm::mat4 DirLight::GetProjectionMatrix() const
 glm::mat4 DirLight::GetViewMatrix(const glm::vec3& lightPosition) const
 {
 	return glm::lookAt(lightPosition, lightPosition + direction, glm::vec3(0.0f, 1.0f, 0.0f));
+}
+
+glm::mat4 DirLight::GetLightSpaceMatrix(const glm::vec3& lightPosition) const
+{
+	return GetProjectionMatrix() * GetViewMatrix(lightPosition);
 }
 
 //	SpotLight
@@ -371,4 +403,9 @@ glm::mat4 SpotLight::GetProjectionMatrix() const
 glm::mat4 SpotLight::GetViewMatrix() const
 {
 	return glm::lookAt(position, position + direction, GetUpDirection(direction, glm::vec3(0.0f, 1.0f, 0.0f)));
+}
+
+glm::mat4 SpotLight::GetLightSpaceMatrix() const
+{
+	return GetProjectionMatrix() * GetViewMatrix();
 }

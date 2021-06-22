@@ -2,6 +2,8 @@
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <vector>
+#include <list>
 
 enum class SourceType
 {
@@ -73,6 +75,9 @@ public:
 	PointLight(glm::vec3 position, glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular);
 	PointLight(glm::vec3 position, glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular,
 		float constant, float linear, float quadratic);
+	virtual glm::mat4 GetProjectionMatrix() const override;
+	std::list<glm::mat4> GetViewMatrices() const;
+	std::list<glm::mat4> GetLightSpaceMatrices() const;
 };
 
 class DirLight : public LightSource
@@ -87,6 +92,7 @@ public:
 	glm::vec3 GetDirection() const;
 	virtual glm::mat4 GetProjectionMatrix() const override;
 	glm::mat4 GetViewMatrix(const glm::vec3& lightPosition = glm::vec3(0.0f)) const;
+	glm::mat4 GetLightSpaceMatrix(const glm::vec3& lightPosition = glm::vec3(0.0f)) const;
 };
 
 class SpotLight : public MovingLight
@@ -114,4 +120,5 @@ public:
 	float GetOuterCutOff() const;
 	virtual glm::mat4 GetProjectionMatrix() const override;
 	glm::mat4 GetViewMatrix() const;
+	glm::mat4 GetLightSpaceMatrix() const;
 };

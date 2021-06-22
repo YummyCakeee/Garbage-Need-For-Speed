@@ -11,7 +11,6 @@
 #include <list>
 #include <glm/gtc/type_ptr.hpp>
 #include "LightSource.h"
-#include "Camera.h"
 #include "Mesh.h"
 
 
@@ -44,7 +43,7 @@ public:
 	void setVec(const std::string& name, glm::vec2 vector) const;
 	void setVec(const std::string& name, glm::vec3 vector) const;
 	void setVec(const std::string& name, glm::vec4 vector) const;
-	void setMatrix4F(const std::string& name, glm::mat4& m) const;
+	void setMatrix4F(const std::string& name, const glm::mat4& m) const;
 	ShaderType GetType() const;
 	unsigned int ID() const;
 	virtual void draw(unsigned int VAO, size_t indicesCount) const;
@@ -55,49 +54,75 @@ public:
 
 struct LightInfo
 {
-	std::vector<glm::mat4> lightSpaceMats;
+	std::list<glm::mat4> lightSpaceMats;
 	unsigned int shadowMapID;
 	SourceType type;
-	LightInfo(const std::vector<glm::mat4>& lightSpaceMats, unsigned int, SourceType type);
+	float farPlane;
+	LightInfo(const std::list<glm::mat4>& lightSpaceMats, unsigned int shadowMapID, SourceType type, float farPlane = 25);
+	LightInfo(const glm::mat4& lightSpaceMat, unsigned int shadowMapID, SourceType type, float farPlane = 25);
+	LightInfo(unsigned int shadowMapID, SourceType type, float farPlane = 25);
 };
 
 struct MaterialShaderInfo
 {
-	const Camera* camera;
-	const glm::mat4* modelMatrix;
+	glm::vec3 viewPos;
+	glm::mat4 spaceMatrix;
+	glm::mat4 modelMatrix;
 	std::list<LightInfo> lightsInfo;
+	MaterialShaderInfo();
 };
 
 class MaterialShader : public Shader
 {
 private:
 	MaterialShaderInfo shaderInfo;
-	void loadCameraAndModelMatrix(const Camera* camera = NULL, const glm::mat4* modelMatrix = NULL) const;
+	void loadMatrices(const glm::vec3* viewPos = NULL, const glm::mat4* spaceMatrix = NULL, const glm::mat4* modelMatrix = NULL) const;
 	void loadMaterial(const Material* material) const;
 	void loadLightsInfo(const std::list<LightInfo>* = NULL) const;
 	int maxMatAndSkyboxTexsCnt;
 public:
 	MaterialShader(const char* vertexPath, const char* fragmentPath, const char* geometryPath = NULL);
 	~MaterialShader();
-	void loadMainInfo(const Camera* camera = NULL, const glm::mat4* modelMatrix = NULL, const Material* material = NULL) const;
-	void setCamera(const Camera* camera);
-	void setModelMatrix(const glm::mat4* modelMatrix);
+	void loadMainInfo(const glm::vec3* viewPos = NULL, const glm::mat4* spaceMatrix = NULL,
+		const glm::mat4* modelMatrix = NULL, const Material* material = NULL) const;
+	void setSpaceMatrix(const glm::mat4& spaceMatrix);
+	void setViewPos(const glm::vec3& position);
+	void setModelMatrix(const glm::mat4& modelMatrix);
 	void addLightInfo(const LightInfo& light);
 	virtual void clearSamplers() const override;
 	virtual void clearShaderInfo() override;
 };
 
+struct ShadowMapShaderInfo
+{
+	std::list<glm::mat4> lightSpaceMatrices;
+	glm::mat4 modelMatrix;
+	glm::vec3 lightPos;
+	float farPlane;
+	bool linearizeDepth;
+	ShadowMapShaderInfo();
+};
+
 class ShadowMapShader : public Shader
 {
 private:
-	const glm::mat4* lightSpaceMatrix;
-	const glm::mat4* modelMatrix;
-	void loadLightSpaceAndModelMatrix(const glm::mat4* lightSpaceMatrix = NULL, const glm::mat4* modelMatrix = NULL) const;
+	ShadowMapShaderInfo shaderInfo;
+	void loadMatrices(const std::list<glm::mat4>* lightSpaceMatrices = NULL, const glm::mat4* modelMatrix = NULL) const;
+	void loadLightPosAndFarPlane(const glm::vec3* lightPos = NULL, float farPlane = 0.0f) const;
+	void loadMaterial(const Material* material) const;
 public:
 	ShadowMapShader(const char* vertexPath, const char* fragmentPath, const char* geometryPath = NULL);
 	~ShadowMapShader();
-	void loadMainInfo(const glm::mat4* lightSpaceMatrix = NULL, const glm::mat4* modelMatrix = NULL) const;
-	void setLightSpaceAndModelMatrix(const glm::mat4* lightSpaceMatrix, const glm::mat4* modelMatrix);
+	void loadMainInfo(const std::list<glm::mat4>* lightSpaceMatrices = NULL, const glm::mat4* modelMatrix = NULL, 
+		const glm::vec3* lightPos = NULL, float farPlane = 0.0f, const Material* material = NULL) const;
+	void setLightSpaceMatrix(const glm::mat4& lightSpaceMatrix);
+	void setLightSpaceMatrices(std::list<glm::mat4>& lightSpaceMatrices);
+	void setModelMatrix(const glm::mat4& modelMatrix);
+	void setLightPos(const glm::vec3& lightPos);
+	void setFarPlane(float farPlane);
+	void enableLinearDepth(bool enable);
+	virtual void clearSamplers() const override;
+	virtual void clearShaderInfo() override; 
 };
 
 class ScreenShader : public Shader

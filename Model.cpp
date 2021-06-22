@@ -133,7 +133,11 @@ Mesh Model::ProcessMesh(aiMesh* mesh, const aiScene* scene)
 			vertexField.x = mesh->mTextureCoords[0][i].x;
 			vertexField.y = mesh->mTextureCoords[0][i].y;
 			vertex.SetTexture(glm::vec2(vertexField.x, vertexField.y));
+		}
+		else vertex.SetTexture(glm::vec2(0.0f, 0.0f));
 
+		if (mesh->HasTangentsAndBitangents())
+		{
 			vertexField.x = mesh->mTangents[i].x;
 			vertexField.y = mesh->mTangents[i].y;
 			vertexField.z = mesh->mTangents[i].z;
@@ -144,7 +148,6 @@ Mesh Model::ProcessMesh(aiMesh* mesh, const aiScene* scene)
 			vertexField.z = mesh->mBitangents[i].z;
 			vertex.SetBitangent(vertexField);
 		}
-		else vertex.SetTexture(glm::vec2(0.0f, 0.0f));
 
 		vertices.push_back(vertex);
 	}
@@ -330,8 +333,8 @@ Model* Model::CreatePlane(float width, float length, const std::string& name, st
 	vertex.SetPosition(glm::vec3(-width / 2.0f, 0.0f, -length / 2.0f));
 	vertex.SetNormal(glm::vec3(0.0f, 1.0f, 0.0f));
 	vertex.SetTexture(glm::vec2(0.0f, 0.0f));
-	vertex.SetTangent(glm::vec3(0.0f));
-	vertex.SetBitangent(glm::vec3(0.0f));
+	vertex.SetTangent(glm::vec3(1.0f, 0.0f, 0.0f));
+	vertex.SetBitangent(glm::vec3(0.0f, 0.0f, 1.0f));
 	vertices.push_back(vertex);
 	//	2 вершина
 	vertex.SetPosition(glm::vec3(-width / 2.0f, 0.0f, length / 2.0f));

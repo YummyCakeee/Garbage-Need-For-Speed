@@ -123,9 +123,11 @@ void GameGlobal::Initialize()
 	ShadowMapShader* depthShader = new ShadowMapShader("shaders\\depth_shader.vert", "shaders\\depth_shader.frag");
 	shaders.insert(std::make_pair("depth", depthShader));
 
-	ShadowMapShader* depthShader2 = new ShadowMapShader("shaders\\screen_shader.vert", "shaders\\depth_shader2.frag");
-	shaders.insert(std::make_pair("depth2", depthShader2));
-	depthBuffer = new DepthFrameBuffer(1024, 1024, depthShader2);
+	ShadowMapShader* depthShaderCubeMap = new ShadowMapShader("shaders\\depth_shader_cube_map.vert", "shaders\\depth_shader.frag", 
+		"shaders\\depth_shader_cube_map.geom");
+	shaders.insert(std::make_pair("depth_cube_map", depthShaderCubeMap));
+
+	depthBuffer = new DepthFrameBuffer(1024, 1024, NULL);
 
 	InitKeys();
 	map = new Map(*this);

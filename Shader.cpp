@@ -141,7 +141,7 @@ void Shader::setVec(const std::string& name, glm::vec4 vector) const
 	setVec(name, vector.x, vector.y, vector.z, vector.w);
 }
 
-void Shader::setMatrix4F(const std::string& name, glm::mat4& m) const
+void Shader::setMatrix4F(const std::string& name, const glm::mat4& m) const
 {
 	glUniformMatrix4fv(glGetUniformLocation(programID, name.c_str()), 1, GL_FALSE, glm::value_ptr(m));
 }
@@ -197,18 +197,39 @@ void Shader::clear()
 	clearShaderInfo();
 }
 
-LightInfo::LightInfo(const std::vector<glm::mat4>& lightSpaceMats, unsigned int shadowMapsID, SourceType type)
+LightInfo::LightInfo(const std::list<glm::mat4>& lightSpaceMats, unsigned int shadowMapID, SourceType type, float farPlane)
 {
 	this->lightSpaceMats = lightSpaceMats;
-	this->shadowMapID = shadowMapsID;
+	this->shadowMapID = shadowMapID;
 	this->type = type;
+	this->farPlane = farPlane;
+}
+
+LightInfo::LightInfo(const glm::mat4& lightSpaceMat, unsigned int shadowMapID, SourceType type, float farPlane)
+{
+	this->lightSpaceMats.push_back(lightSpaceMat);
+	this->shadowMapID = shadowMapID;
+	this->type = type;
+	this->farPlane = farPlane;
+}
+
+LightInfo::LightInfo(unsigned int shadowMapID, SourceType type, float farPlane)
+{
+	this->shadowMapID = shadowMapID;
+	this->type = type;
+	this->farPlane = farPlane;
+}
+
+MaterialShaderInfo::MaterialShaderInfo()
+{
+	modelMatrix = glm::mat4(1.0f);
+	spaceMatrix = glm::mat4(1.0f);
+	viewPos = glm::vec3(0.0f);
 }
 
 MaterialShader::MaterialShader(const char* vertexPath, const char* fragmentPath, const char* geometryPath) :
 	Shader(ShaderType::MATERIAL, vertexPath, fragmentPath, geometryPath)
 {
-	shaderInfo.camera = NULL;
-	shaderInfo.modelMatrix = NULL;
 	maxMatAndSkyboxTexsCnt = 9;
 }
 
@@ -216,38 +237,25 @@ MaterialShader::~MaterialShader()
 {
 }
 
-void MaterialShader::loadCameraAndModelMatrix(const Camera* camera, const glm::mat4* modelMatrix) const
+void MaterialShader::loadMatrices(const glm::vec3* viewPos, const glm::mat4* spaceMatrix, const glm::mat4* modelMatrix) const
 {
-	const Camera* cam = this->shaderInfo.camera;
-	if (camera != NULL) cam = camera;
-	glm::mat4 projection = glm::mat4(1.0f);
-	glm::mat4 view = glm::mat4(1.0f);
-	if (cam != NULL)
-	{
-		setVec("viewPos", cam->GetPosition());
-		projection = cam->GetProjectionMatrix();
-		view = cam->GetViewMatrix();
-	}
-	else
-	{
-		std::cout << "WARNING:: No camera set to object which is using shader ID: " << programID << std::endl;
-		setVec("viewPos", glm::vec3(0.0f));
-	}
-	const glm::mat4* modelMat = this->shaderInfo.modelMatrix;
-	if (modelMatrix != NULL) modelMat = modelMatrix;
-	glm::mat4 model;
-	if (modelMat == NULL)
-
-	{
-		model = glm::mat4(1.0f);
-		std::cout << "WARNING: No model matrix set to object which is using shader ID: " << programID << std::endl;
-	}
-	else model = *modelMat;
-	glm::mat4 finalMatrix = projection * view * model;
-	setMatrix4F("finalMatrix", finalMatrix);
-	setMatrix4F("model", model);
-	glm::mat4 normalMatrix = glm::transpose(glm::inverse(model));
+	//	Позиция наблюдателя
+	if (viewPos != NULL) setVec("viewPos", *viewPos);
+	else setVec("viewPos", shaderInfo.viewPos);
+	//	Матрица пространства
+	glm::mat4 spaceMat = shaderInfo.spaceMatrix;
+	if (spaceMatrix != NULL) spaceMat = *spaceMatrix;
+	//	Модельная матрица
+	glm::mat4 modelMat = shaderInfo.modelMatrix;
+	if (modelMatrix != NULL) modelMat = *modelMatrix;
+	setMatrix4F("model", modelMat);
+	//	Обратная и транспонированная модельная матрица
+	glm::mat4 normalMatrix = glm::transpose(glm::inverse(modelMat));
 	setMatrix4F("normalMatrix", normalMatrix);
+	//	Конечная матрица
+	glm::mat4 finalMatrix = spaceMat * modelMat;
+	setMatrix4F("finalMatrix", finalMatrix);
+
 }
 
 void MaterialShader::loadMaterial(const Material* material) const
@@ -350,10 +358,9 @@ void MaterialShader::loadLightsInfo(const std::list<LightInfo>*) const
 		{
 		case SourceType::DIRECTIONAL:
 		{
-			glm::mat4 lightSpaceMat = glm::mat4(1.0f);
 			if (it->lightSpaceMats.size() > 0)
-				lightSpaceMat = it->lightSpaceMats[0];
-			setMatrix4F("dLightSpaceMatrix[" + std::to_string(dLightsIndex) + "]", lightSpaceMat);
+				setMatrix4F("dLightSpaceMatrix[" + std::to_string(dLightsIndex) + "]", it->lightSpaceMats.front());
+			else setMatrix4F("dLightSpaceMatrix[" + std::to_string(dLightsIndex) + "]", glm::mat4(1.0f));
 			setInt("dLightShadowMaps[" + std::to_string(dLightsIndex) + "]", i);
 			glActiveTexture(GL_TEXTURE0 + i);
 			glBindTexture(GL_TEXTURE_2D, it->shadowMapID);
@@ -361,14 +368,17 @@ void MaterialShader::loadLightsInfo(const std::list<LightInfo>*) const
 		}; break;
 		case SourceType::POINT:
 		{
-
+			setFloat("pLightFarPlane[" + std::to_string(pLightsIndex) + "]", it->farPlane);
+			setInt("pLightShadowMaps[" + std::to_string(pLightsIndex) + "]", i);
+			glActiveTexture(GL_TEXTURE0 + i);
+			glBindTexture(GL_TEXTURE_CUBE_MAP, it->shadowMapID);
+			pLightsIndex++;
 		}; break;
 		case SourceType::SPOTLIGHT:
 		{
-			glm::mat4 lightSpaceMat = glm::mat4(1.0f);
 			if (it->lightSpaceMats.size() > 0)
-				lightSpaceMat = it->lightSpaceMats[0];
-			setMatrix4F("sLightSpaceMatrix[" + std::to_string(sLightsIndex) + "]", lightSpaceMat);
+				setMatrix4F("sLightSpaceMatrix[" + std::to_string(sLightsIndex) + "]", it->lightSpaceMats.front());
+			else setMatrix4F("sLightSpaceMatrix[" + std::to_string(sLightsIndex) + "]", glm::mat4(1.0f));
 			setInt("sLightShadowMaps[" + std::to_string(sLightsIndex) + "]", i);
 			glActiveTexture(GL_TEXTURE0 + i);
 			glBindTexture(GL_TEXTURE_2D, it->shadowMapID);
@@ -380,12 +390,17 @@ void MaterialShader::loadLightsInfo(const std::list<LightInfo>*) const
 	}
 }
 
-void MaterialShader::setCamera(const Camera* camera)
+void MaterialShader::setSpaceMatrix(const glm::mat4& spaceMatrix)
 {
-	this->shaderInfo.camera = camera;
+	shaderInfo.spaceMatrix = spaceMatrix;
 }
 
-void MaterialShader::setModelMatrix(const glm::mat4* modelMatrix)
+void MaterialShader::setViewPos(const glm::vec3& position)
+{
+	shaderInfo.viewPos = position;
+}
+
+void MaterialShader::setModelMatrix(const glm::mat4& modelMatrix)
 {
 	this->shaderInfo.modelMatrix = modelMatrix;
 }
@@ -395,9 +410,9 @@ void MaterialShader::addLightInfo(const LightInfo& light)
 	shaderInfo.lightsInfo.push_back(light);
 }
 
-void MaterialShader::loadMainInfo(const Camera* camera, const glm::mat4* modelMatrix, const Material* material) const
+void MaterialShader::loadMainInfo(const glm::vec3* viewPos, const glm::mat4* spaceMatrix, const glm::mat4* modelMatrix, const Material* material) const
 {
-	loadCameraAndModelMatrix(camera, modelMatrix);
+	loadMatrices(viewPos, spaceMatrix, modelMatrix);
 	loadMaterial(material);
 	loadLightsInfo();
 }
@@ -433,16 +448,24 @@ void MaterialShader::clearSamplers() const
 
 void MaterialShader::clearShaderInfo()
 {
-	shaderInfo.camera = NULL;
-	shaderInfo.modelMatrix = NULL;
+	shaderInfo.modelMatrix = glm::mat4(1.0f);
+	shaderInfo.spaceMatrix = glm::mat4(1.0f);
+	shaderInfo.viewPos = glm::vec3(0.0f);
 	shaderInfo.lightsInfo.clear();
 }
+
+ShadowMapShaderInfo::ShadowMapShaderInfo()
+{
+	modelMatrix = glm::mat4(1.0f);
+	lightPos = glm::vec3(0.0f);
+	farPlane = 1.0f;
+	linearizeDepth = false;
+}
+
 
 ShadowMapShader::ShadowMapShader(const char* vertexPath, const char* fragmentPath, const char* geometryPath) :
 	Shader(ShaderType::SHADOW_MAP, vertexPath, fragmentPath, geometryPath)
 {
-	lightSpaceMatrix = NULL;
-	modelMatrix = NULL;
 }
 
 ShadowMapShader::~ShadowMapShader()
@@ -450,40 +473,129 @@ ShadowMapShader::~ShadowMapShader()
 }
 
 
-void ShadowMapShader::loadLightSpaceAndModelMatrix(const glm::mat4* lightSpaceMatrix, const glm::mat4* modelMatrix) const
+void ShadowMapShader::loadMatrices(const std::list<glm::mat4>* lightSpaceMatrices, const glm::mat4* modelMatrix) const
 {
-	const glm::mat4* lightSpaceMat = this->lightSpaceMatrix;
-	if (lightSpaceMatrix != NULL) lightSpaceMat = lightSpaceMatrix;
-	glm::mat4 lsMat = glm::mat4(1.0f);
-	if (lightSpaceMat != NULL) lsMat = *lightSpaceMat;
-	else
+	//	Модельная матрица
+	glm::mat4 modelMat = shaderInfo.modelMatrix;
+	if (modelMatrix != NULL) modelMat = *modelMatrix;
+	setMatrix4F("model", modelMat);
+	//	Пространственная(-ые) матрица(-ы) света
+	const std::list<glm::mat4>* lightSpaceMats;
+	if (lightSpaceMatrices != NULL) lightSpaceMats = lightSpaceMatrices;
+	else lightSpaceMats = &shaderInfo.lightSpaceMatrices;
+	//	Одна матрица
+	if (lightSpaceMats->size() == 1)
 	{
-		std::cout << "WARNING:: No light space matrix set to object which is using shader ID: " << programID << std::endl;
+		//	Конечная матрица
+		glm::mat4 finalMatrix = lightSpaceMats->front() * modelMat;
+		setMatrix4F("finalMatrix", finalMatrix);
 	}
-	const glm::mat4* modelMat = this->modelMatrix;
-	if (modelMatrix != NULL) modelMat = modelMatrix;
-	glm::mat4 model = glm::mat4(1.0f);
-	if (modelMat == NULL)
+	//	Шесть матриц
+	else if (lightSpaceMats->size() >= 6)
 	{
-		std::cout << "WARNING: No model matrix set to object which is using shader ID: " << programID << std::endl;
+		int index = 0;
+		for (auto it = lightSpaceMats->begin(); it != lightSpaceMats->end(); it++)
+		{
+			glm::mat4 mat = *it;
+			setMatrix4F("lightSpaceMatrices[" + std::to_string(index++) + "]", mat);
+		}
 	}
-	else model = *modelMat;
-	glm::mat4 finalMatrix = lsMat * model;
-	setMatrix4F("finalMatrix", finalMatrix);
 }
 
-void ShadowMapShader::loadMainInfo(const glm::mat4* lightSpaceMatrix, const glm::mat4* modelMatrix) const
+void ShadowMapShader::loadLightPosAndFarPlane(const glm::vec3* lightPos, float farPlane) const
 {
-	loadLightSpaceAndModelMatrix(lightSpaceMatrix, modelMatrix);
+	//	Включить линеаризацию значений
+	setBool("linearize", shaderInfo.linearizeDepth);
+	if (!shaderInfo.linearizeDepth) return;
+	//	Позиция источника света
+	if (lightPos != NULL) setVec("lightPos", *lightPos);
+	else setVec("lightPos", shaderInfo.lightPos);
+	//	Установка расстояния до дальней плоскости
+	if (farPlane != 0.0f) setFloat("farPlane", farPlane);
+	else setFloat("farPlane", shaderInfo.farPlane);
 }
 
-void ShadowMapShader::setLightSpaceAndModelMatrix(const glm::mat4* lightSpaceMatrix, const glm::mat4* modelMatrix)
+void ShadowMapShader::loadMaterial(const Material* material) const
 {
-	this->lightSpaceMatrix = lightSpaceMatrix;
-	this->modelMatrix = modelMatrix;
+	setBool("material.useDiffMap", false);
+	if (material != NULL)
+	{
+		const std::vector<Texture>* textures = material->GetTextures();
+		if (textures != NULL)
+		{
+			for (int i = 0; i < textures->size(); i++)
+			{
+				if ((*textures)[i].GetType() == TextureType::TEXTURE2D)
+				{
+					if ((*textures)[i].GetDataType() == TextureDataType::DIFFUSE)
+					{
+						setInt("material.texture_diffuse", 0);
+						glActiveTexture(GL_TEXTURE0);
+						glBindTexture(GL_TEXTURE_2D, (*textures)[i].GetId());
+						setBool("material.useDiffMap", true);
+						break;
+					}
+				}
+			}
+		}
+		setVec("material.diffuse", material->GetColor(MaterialType::DIFFUSE));
+	}
+	else setVec("material.diffuse", glm::vec4(1.0f, 0.0f, 0.9f, 1.0f));
 }
 
+void ShadowMapShader::loadMainInfo(const std::list<glm::mat4>* lightSpaceMatrices, const glm::mat4* modelMatrix,
+	const glm::vec3* lightPos, float farPlane, const Material* material) const
+{
+	loadMatrices(lightSpaceMatrices, modelMatrix);
+	loadLightPosAndFarPlane(lightPos, farPlane);
+	loadMaterial(material);
+}
 
+void ShadowMapShader::setLightSpaceMatrix(const glm::mat4& lightSpaceMatrix)
+{
+	shaderInfo.lightSpaceMatrices.clear();
+	shaderInfo.lightSpaceMatrices.push_back(lightSpaceMatrix);
+}
+
+void ShadowMapShader::setLightSpaceMatrices(std::list<glm::mat4>& lightSpaceMatrices)
+{
+	shaderInfo.lightSpaceMatrices = lightSpaceMatrices;
+}
+
+void ShadowMapShader::setModelMatrix(const glm::mat4& modelMatrix)
+{
+	this->shaderInfo.modelMatrix = modelMatrix;
+}
+
+void ShadowMapShader::setLightPos(const glm::vec3& lightPos)
+{
+	shaderInfo.lightPos = lightPos;
+}
+void ShadowMapShader::setFarPlane(float farPlane)
+{
+	shaderInfo.farPlane = farPlane;
+}
+
+void ShadowMapShader::enableLinearDepth(bool enable)
+{
+	shaderInfo.linearizeDepth = enable;
+}
+
+void ShadowMapShader::clearSamplers() const
+{
+	use();
+	setBool("material.useDiffMap", false);
+	setInt("material.texture_diffuse", 30);
+}
+
+void ShadowMapShader::clearShaderInfo()
+{
+	shaderInfo.lightPos = glm::vec3(0.0f);
+	shaderInfo.lightSpaceMatrices.clear();
+	shaderInfo.modelMatrix = glm::mat4(1.0f);
+	shaderInfo.farPlane = 1.0f;
+	shaderInfo.linearizeDepth = false;
+}
 
 ScreenShader::ScreenShader(const char* vertexPath, const char* fragmentPath, const char* geometryPath) :
 	Shader(ShaderType::SCREEN, vertexPath, fragmentPath, geometryPath)

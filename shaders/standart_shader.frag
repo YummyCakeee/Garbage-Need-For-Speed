@@ -8,13 +8,14 @@ const uint DL_TYPE = 0x00000001u;
 const uint PL_TYPE = 0x00000002u;
 const uint SL_TYPE = 0x00000004u;
 
+const int CubeShadowMapSamples = 20;
+
 out vec4 FragColor;
 in VS_OUT
 {
 	vec3 Normal;
 	vec3 FragPos;
 	vec4 FragPosDLightSpaces[NR_DIR_LIGHTS];
-	vec4 FragPosPLightSpaces[2];
 	vec4 FragPosSLightSpaces[NR_SPOT_LIGHTS];
 	vec2 TextureCoords;
 }fs_in;
@@ -86,8 +87,6 @@ layout (shared, binding = 0) uniform DirLightsInfo
 	SpotLight spotLights[NR_SPOT_LIGHTS];
 };
 
-
-
 uniform vec3 viewPos;
 uniform Material material;
 uniform samplerCube skybox;
@@ -95,11 +94,21 @@ uniform bool hasSkybox;
 uniform sampler2D dLightShadowMaps[NR_DIR_LIGHTS];
 uniform samplerCube pLightShadowMaps[2];
 uniform sampler2D sLightShadowMaps[NR_SPOT_LIGHTS];
+uniform float pLightFarPlane[2];
 
 vec4 CalcDirLight(int lightIndex, vec3 normal, vec3 viewDir);
 vec4 CalcPointLight(int lightIndex, vec3 normal, vec3 viewDir);
 vec4 CalcSpotLight(int lightIndex, vec3 normal, vec3 viewDir);
 float CalcShadow(vec4 fragPos, vec3 normal, vec3 lightDir, uint SourceType, int lightIndex);
+
+vec3 sampleOffsetDirections[CubeShadowMapSamples] = vec3[]
+(
+   vec3( 1,  1,  1), vec3( 1, -1,  1), vec3(-1, -1,  1), vec3(-1,  1,  1), 
+   vec3( 1,  1, -1), vec3( 1, -1, -1), vec3(-1, -1, -1), vec3(-1,  1, -1),
+   vec3( 1,  1,  0), vec3( 1, -1,  0), vec3(-1, -1,  0), vec3(-1,  1,  0),
+   vec3( 1,  0,  1), vec3(-1,  0,  1), vec3( 1,  0, -1), vec3(-1,  0, -1),
+   vec3( 0,  1,  1), vec3( 0, -1,  1), vec3( 0, -1, -1), vec3( 0,  1, -1)
+); 
 
 ActiveMaterial activeMat = ActiveMaterial(vec4(0.0), vec4(0.0), vec4(0.0), 0.0f, 0.0f);
 
@@ -209,8 +218,10 @@ vec4 CalcPointLight(int lightIndex, vec3 normal, vec3 viewDir)
 	vec4 diffuse = vec4(max(dot(normal, lightDir), 0.0) * pointLights[i].diffuse, 1.0f) * activeMat.diffuse;
 	//	specular
 	vec4 specular = vec4(pow(max(dot(normal, halfWayDir), 0.0), activeMat.shininess) * pointLights[i].specular, 1.0f) * activeMat.specular; 
+	//	shadow
+	float shadow = CalcShadow(vec4(fs_in.FragPos, 1.0f), normal, lightDir, PL_TYPE, lightIndex);
 
-	return (diffuse + specular + ambient) * attenuation;
+	return (ambient + (diffuse + specular) * (1.0f - shadow)) * attenuation;
 }
 
 
@@ -239,10 +250,6 @@ vec4 CalcSpotLight(int lightIndex, vec3 normal, vec3 viewDir)
 
 float CalcShadow(vec4 fragPos, vec3 normal, vec3 lightDir, uint SourceType, int lightIndex)
 {
-	vec3 projCoords = fragPos.xyz / fragPos.w;
-	projCoords = projCoords * 0.5f + 0.5f;
-	if (projCoords.z > 1.0f) return 0.0;
-	float currentDepth = projCoords.z;
 	float bias = max(0.01 * (1.0f - dot(normal, lightDir)), 0.005f);
 	float shadow = 0.0f;
 
@@ -250,29 +257,52 @@ float CalcShadow(vec4 fragPos, vec3 normal, vec3 lightDir, uint SourceType, int 
 	{
 		case DL_TYPE:
 		{
+			vec3 projCoords = fragPos.xyz / fragPos.w;
+			projCoords = projCoords * 0.5f + 0.5f;
+			if (projCoords.z > 1.0f) return 0.0;
+			float currentDepth = projCoords.z;
+
 			vec2 texelSize = 1.0f / textureSize(dLightShadowMaps[lightIndex], 0);
 			for (int x = -1; x <= 1; ++x)
-			for (int y = -1; y <= 1; ++y)
-			{
-				float pcfDepth = texture(dLightShadowMaps[lightIndex], projCoords.xy + vec2(x, y) * texelSize).r;
-				shadow += currentDepth - bias > pcfDepth ? 1.0f : 0.0f;
-			}
+				for (int y = -1; y <= 1; ++y)
+				{
+					float pcfDepth = texture(dLightShadowMaps[lightIndex], projCoords.xy + vec2(x, y) * texelSize).r;
+					shadow +=  currentDepth - bias > pcfDepth ? 1.0f : 0.0f;
+				}
+			return shadow / 9.0f;
 		}; break;
 		case PL_TYPE:
 		{
-
+			vec3 fragToLight = fragPos.xyz - pointLights[lightIndex].position;
+			float currentDepth = length(fragToLight);
+			bias = 0.05f;
+			float viewDistance = length(viewPos - fragPos.xyz);
+			float diskRadius = (1.0f + (viewDistance/pLightFarPlane[lightIndex])) / 25.0f;
+			for (int i = 0; i < CubeShadowMapSamples; i++)
+			{
+				float closestDepth = texture(pLightShadowMaps[lightIndex], fragToLight + sampleOffsetDirections[i] * diskRadius).r;
+				closestDepth *= pLightFarPlane[lightIndex];
+				if (currentDepth - bias > closestDepth)
+					shadow += 1.0f;
+			}
+			return shadow / float(CubeShadowMapSamples);
 		}; break;
 		case SL_TYPE:
 		{
+			vec3 projCoords = fragPos.xyz / fragPos.w;
+			projCoords = projCoords * 0.5f + 0.5f;
+			if (projCoords.z > 1.0f) return 0.0;
+			float currentDepth = projCoords.z;
+
 			vec2 texelSize = 1.0f / textureSize(sLightShadowMaps[lightIndex], 0);
 			for (int x = -1; x <= 1; ++x)
 			for (int y = -1; y <= 1; ++y)
 			{
 				float pcfDepth = texture(sLightShadowMaps[lightIndex], projCoords.xy + vec2(x, y) * texelSize).r;
-				shadow += currentDepth - bias > pcfDepth ? 1.0f : 0.0f;
+				shadow +=  currentDepth - bias > pcfDepth ? 1.0f : 0.0f;
 			}
-		}; break;
-		default: break;
+			return shadow / 9.0f;
+		}; break;		
 	};
-	return shadow / 9.0f;
+	return 0.0;
 }
